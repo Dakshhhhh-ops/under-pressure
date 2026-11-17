@@ -1,0 +1,1274 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style></head><body>
+<title>Pressure Board</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a floodlit scoreboard. Sticky section rail, summary lists first, then a live what-if lab, then the checks. */
+:root {
+  --bg: #f4f3f8; --surface: #ffffff; --ink: #15172b; --muted: #5b5e75; --line: #dfdde9; --soft: #eeecf5;
+  --accent: #c4145a; --accent-soft: #fbe2ed; --accent-ink: #ffffff; --normal: #2949a8; --normal-soft: #e2e8fb;
+  --firm: #16784a; --likely: #a1620a; --near: #9b3939; --shadow: 0 1px 2px rgba(21,23,43,.06), 0 8px 24px -12px rgba(21,23,43,.18);
+  --display: "Barlow Condensed", "Arial Narrow", "Segoe UI", sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, "Courier New", monospace;
+  --ease: cubic-bezier(.16,1,.3,1); --r: 3px; --glow: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0d0e1b; --surface: #15172b; --ink: #ecebf5; --muted: #a1a3bc; --line: #292c47; --soft: #1c1f36;
+  --accent: #ff4f93; --accent-soft: #3a1628; --accent-ink: #1a0610; --normal: #84a5ff; --normal-soft: #1a2445;
+  --firm: #4cc58b; --likely: #f0b247; --near: #f2807d; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0d0e1b; --surface: #15172b; --ink: #ecebf5; --muted: #a1a3bc; --line: #292c47; --soft: #1c1f36;
+  --accent: #ff4f93; --accent-soft: #3a1628; --accent-ink: #1a0610; --normal: #84a5ff; --normal-soft: #1a2445;
+  --firm: #4cc58b; --likely: #f0b247; --near: #f2807d; --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6); color-scheme: dark }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 72px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation-duration: 1ms !important; transition-duration: 1ms !important; } }
+body { background: var(--bg); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5; padding-block: 0 56px; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 30; background: var(--surface); }
+.gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 40px; }
+h1, h2, h3 { font-family: var(--display); font-weight: 700; letter-spacing: .01em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(44px, 9vw, 92px); line-height: .9; text-transform: uppercase; }
+h1 em { font-style: normal; color: var(--accent); }
+h2 { font-size: clamp(26px, 4vw, 34px); text-transform: uppercase; line-height: 1.05; }
+h3 { font-size: 19px; text-transform: uppercase; letter-spacing: .02em; }
+p { margin: 0; max-width: 68ch; }
+.num, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+.muted { color: var(--muted); }
+.small { font-size: 13px; }
+
+/* sticky rail */
+.rail { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20; background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+.rail-in { max-width: 1180px; margin: 0 auto; display: flex; align-items: center; gap: 14px; padding-block: 8px; min-width: 0; }
+.brand { font-family: var(--display); font-size: 20px; font-weight: 700; text-transform: uppercase; white-space: nowrap; }
+.brand b { color: var(--accent); }
+.links { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; flex: 1; min-width: 0; }
+.links::-webkit-scrollbar { display: none; }
+.links a { color: var(--muted); text-decoration: none; font-size: 13.5px; font-weight: 500; padding: 6px 10px; border-radius: var(--r); white-space: nowrap; transition: color .2s, background .2s; }
+.links a:hover { color: var(--ink); background: var(--soft); }
+.links a.on { color: var(--accent); background: var(--accent-soft); }
+.find { position: relative; flex: 0 1 220px; min-width: 120px; }
+.find input { width: 100%; font: 14px var(--body); padding: 7px 10px 7px 30px; border-radius: var(--r); border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.find input:focus { outline: 2px solid var(--accent); outline-offset: 0; border-color: transparent; }
+.find svg { position: absolute; left: 9px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; }
+.find svg * { stroke: var(--muted); fill: none; stroke-width: 2; }
+.hits { position: absolute; top: calc(100% + 6px); right: 0; width: min(300px, 80vw); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); padding: 4px; display: grid; max-height: 320px; overflow-y: auto; }
+.hits button { text-align: left; font: 14px var(--body); border: 0; background: none; color: var(--ink); padding: 7px 9px; border-radius: var(--r); cursor: pointer; display: flex; justify-content: space-between; gap: 8px; }
+.hits button:hover, .hits button.sel { background: var(--soft); }
+.hits small { color: var(--muted); font-family: var(--mono); font-size: 11.5px; }
+.cur { display: none; flex: 1; min-width: 0; font: 500 12px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent);
+  background: transparent; border: 1px solid var(--line); border-radius: var(--r); padding: 6px 8px; }
+.cur:focus-visible { outline: 2px solid var(--accent); }
+@media (max-width: 600px) { .links { display: none; } .cur { display: block; } }
+.links { -webkit-mask-image: linear-gradient(90deg, #000 88%, transparent); mask-image: linear-gradient(90deg, #000 88%, transparent); }
+@media (max-width: 640px) { .brand { font-size: 16px; } .find { flex: 0 1 104px; min-width: 88px; } .find input { padding-left: 26px; } }
+
+/* hero */
+header.top { padding-block: 44px 0; display: grid; gap: 20px; }
+.hero { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
+@media (max-width: 860px) { .hero { grid-template-columns: 1fr; } }
+.def { font-size: 18px; line-height: 1.45; }
+.def b { color: var(--accent); }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 520px) { .stats { grid-template-columns: 1fr; } }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 8px; justify-items: start; }
+.stat svg { width: 64px; height: 64px; }
+.ring-bg { stroke: var(--soft); } .ring { stroke: var(--accent); transition: stroke-dashoffset 1.2s var(--ease); }
+.stat b { font-family: var(--display); font-size: 34px; line-height: 1; }
+.stat span { font-size: 13px; color: var(--muted); line-height: 1.35; }
+.lev { display: grid; gap: 5px; width: 100%; padding-block: 6px; }
+.lev i { display: block; height: 10px; border-radius: var(--r); transform-origin: left; transition: transform 1.2s var(--ease); }
+
+section { display: grid; gap: 16px; }
+.sec-h { display: flex; justify-content: space-between; align-items: end; gap: 12px; flex-wrap: wrap; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 20px; min-width: 0; }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 460px), 1fr)); gap: 16px; }
+
+/* lists */
+.board { display: grid; gap: 2px; }
+.row { display: grid; grid-template-columns: 38px minmax(0, 1fr) 96px 78px; gap: 12px; align-items: center;
+  padding: 8px 10px; border-radius: var(--r); cursor: pointer; border: 0; background: none; color: inherit; font: inherit; text-align: left; width: 100%;
+  transition: background .2s, transform .2s var(--ease); animation: rise .5s var(--ease) backwards; animation-delay: calc(var(--i) * 45ms); }
+.row:hover { background: var(--soft); transform: translateX(3px); }
+.row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+@keyframes rise { from { transform: translateY(8px); } to { transform: none; } }
+.rk { font-family: var(--display); font-size: 28px; line-height: 1; color: var(--accent); text-align: right; }
+.nm { font-weight: 600; min-width: 0; }
+.nm small { display: block; font-weight: 400; color: var(--muted); font-size: 12px; }
+.bar { height: 8px; background: var(--soft); border-radius: 4px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; background: var(--accent); border-radius: 4px; transform-origin: left; transform: scaleX(var(--w, 1)); transition: transform .9s var(--ease); }
+.pre .bar i { transform: scaleX(0); }
+.chip { font-family: var(--mono); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 2px 8px; border-radius: var(--r); border: 1px solid currentColor; justify-self: start; white-space: nowrap; }
+.chip.firm { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); } .chip.likely { color: var(--accent); } .chip.near-tie { color: var(--muted); }
+.board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.hint { font-size: 12.5px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.callout { border-left: 3px solid var(--accent); background: var(--accent-soft); padding: 14px 16px; border-radius: 0 8px 8px 0; display: grid; gap: 8px; }
+
+/* segmented control */
+.seg { position: relative; display: inline-grid; grid-auto-flow: column; grid-auto-columns: 1fr; border: 1px solid var(--line); border-radius: var(--r); padding: 3px; background: var(--soft); }
+.seg::before { content: ""; position: absolute; top: 3px; bottom: 3px; left: 3px; width: calc((100% - 6px) / var(--n, 2)); border-radius: var(--r); background: var(--accent);
+  transform: translateX(calc(var(--k, 0) * 100%)); transition: transform .35s var(--ease); box-shadow: 0 2px 8px -2px color-mix(in srgb, var(--accent) 60%, transparent); }
+.seg button { position: relative; font: 600 13.5px var(--body); padding: 6px 14px; border: 0; background: none; color: var(--muted); cursor: pointer; border-radius: var(--r); transition: color .25s; white-space: nowrap; }
+.seg button[aria-pressed="true"] { color: var(--accent-ink); }
+.seg button:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* lab */
+.lab { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .lab { grid-template-columns: 1fr; } }
+.ctl { display: grid; gap: 8px; }
+.ctl label { font-weight: 600; font-size: 14px; display: flex; justify-content: space-between; gap: 8px; }
+.ctl label output { font-family: var(--mono); color: var(--accent); min-width: 5ch; text-align: right; }
+input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 22px; background: transparent; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--soft) var(--p, 0%)); }
+input[type=range]::-moz-range-track { height: 6px; border-radius: 3px; background: linear-gradient(to right, var(--accent) var(--p, 0%), var(--soft) var(--p, 0%)); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); margin-top: -7px; transition: transform .15s; }
+input[type=range]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--surface); border: 3px solid var(--accent); }
+input[type=range]:active::-webkit-slider-thumb { transform: scale(1.2); }
+input[type=range]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.presets { display: flex; flex-wrap: wrap; gap: 6px; }
+.presets button { font: 500 12px var(--mono); padding: 5px 9px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color .2s, background .2s, transform .15s; }
+.presets button:hover { border-color: var(--accent); transform: translateY(-1px); }
+.presets button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.presets button:focus-visible { outline: 2px solid var(--accent); }
+.kept { display: grid; gap: 8px; }
+.kept-n { font-family: var(--display); font-size: 48px; line-height: 1; }
+.kept-n small { font-family: var(--body); font-size: 13px; color: var(--muted); font-weight: 400; margin-left: 4px; }
+.segs { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.segs i { height: 8px; border-radius: 2px; background: var(--soft); transition: background .35s; transition-delay: calc(var(--i) * 25ms); }
+.segs i.on { background: var(--accent); }
+.wi { display: grid; gap: 3px; font-size: 14px; }
+.wi > div { display: grid; grid-template-columns: 26px minmax(0, 1fr) 52px 44px; gap: 8px; align-items: center; padding: 5px 8px; border-radius: var(--r); background: var(--surface); cursor: pointer; }
+.wi > div:hover { background: var(--soft); }
+.wi > div.new { background: none; box-shadow: inset 2px 0 0 var(--accent); }
+.wi .nr { font-family: var(--display); font-size: 18px; color: var(--accent); text-align: right; }
+.mv { font-family: var(--mono); font-size: 12px; text-align: right; }
+.mv.up { color: var(--accent); } .mv.dn { color: var(--muted); }
+
+/* charts */
+svg { display: block; width: 100%; height: auto; overflow: visible; }
+svg text { fill: var(--muted); font-family: var(--mono); font-size: 11px; }
+svg .ax { stroke: var(--line); }
+.sc-wrap { position: relative; }
+.pt { transition: transform .7s var(--ease); cursor: pointer; }
+.pt circle { transition: fill .4s, r .4s, fill-opacity .4s; fill: var(--line); fill-opacity: .75; stroke: var(--surface); stroke-width: 1.5; }
+.pt.pass circle { fill: transparent; stroke: var(--muted); stroke-width: 1.5; }
+.pt.top circle { fill: var(--accent); fill-opacity: .95; }
+.pt:hover circle, .pt:focus-visible circle { stroke: var(--ink); stroke-width: 2; }
+.pt:focus-visible { outline: none; }
+.pt text { opacity: 0; transition: opacity .3s; fill: var(--ink); font-family: var(--body); font-size: 11px; pointer-events: none; paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.pt.top text { opacity: 1; }
+.gate { transition: transform .6s var(--ease), opacity .3s; }
+.tip { position: absolute; pointer-events: none; background: var(--ink); color: var(--bg); font-size: 12.5px; padding: 7px 10px; border-radius: var(--r); white-space: nowrap; transform: translate(-50%, calc(-100% - 12px)); opacity: 0; transition: opacity .15s; z-index: 5; }
+.tip.on { opacity: 1; }
+.tip b { display: block; font-size: 13px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend .nomark::before { display: none; }
+.legend .sz::before { background: transparent !important; border: 1.5px solid var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+.draw { stroke-dasharray: var(--len); stroke-dashoffset: 0; animation: draw 1.4s var(--ease) both; }
+@keyframes draw { from { stroke-dashoffset: var(--len); } }
+.grow { transform-box: fill-box; transform-origin: left; animation: grow 1s var(--ease) both; animation-delay: calc(var(--i, 0) * 70ms); }
+@keyframes grow { from { transform: scaleX(0); } }
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th { text-align: left; font-weight: 600; color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--line); padding: 7px 8px; white-space: nowrap; }
+td { border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+tbody tr { transition: background .2s; } tbody tr:hover { background: var(--soft); }
+tr.hi td { background: var(--accent-soft); font-weight: 600; }
+.sens { display: grid; gap: 3px; font-size: 13px; }
+.sens > div { display: grid; grid-template-columns: minmax(0, 1fr) 120px 120px; gap: 10px; align-items: center; padding: 4px 6px; border-radius: var(--r); }
+.sens > div:not(.h):hover { background: var(--soft); }
+.sens .h { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; }
+.mini { display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 12px; }
+.mini .bar { flex: 1; }
+.heat { display: grid; grid-template-columns: 96px repeat(3, minmax(0, 1fr)); gap: 5px; font-size: 13px; }
+.heat div { padding: 14px 6px; border-radius: var(--r); text-align: center; }
+.heat .cell { animation: pop .5s var(--ease) backwards; animation-delay: calc(var(--i) * 60ms); transition: transform .2s; }
+.heat .cell:hover { transform: scale(1.05); }
+@keyframes pop { from { transform: scale(.85); } }
+.heat .lb { text-align: left; color: var(--muted); padding-left: 0; }
+ul.lim { margin: 0; padding-left: 18px; display: grid; gap: 8px; max-width: 82ch; }
+
+/* card */
+.pc-hero { display: flex; align-items: flex-end; gap: clamp(14px, 3vw, 28px); }
+.pc-rk { font: 700 clamp(72px, 13vw, 112px) / .78 var(--display); color: var(--accent); text-shadow: 0 0 44px var(--glow); }
+.pc-sc { font: 500 clamp(40px, 7vw, 66px) / 1 var(--mono); font-variant-numeric: tabular-nums; display: block; }
+.pc-hero span { display: block; color: var(--muted); font-size: 13px; margin-top: 4px; }
+.lbl { font: 500 11.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+@media (max-width: 560px) { dialog { width: 100vw !important; max-width: 100vw; height: 100dvh; max-height: 100dvh !important; margin: 0; border: 0 !important; border-radius: 0 !important; } }
+dialog { overflow: auto; }
+dialog { border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); color: var(--ink); width: min(740px, calc(100vw - 32px)); max-height: calc(100vh - 48px); padding: 0; box-shadow: var(--shadow); }
+dialog[open] { animation: card .3s var(--ease); }
+@keyframes card { from { transform: translateY(14px) scale(.98); opacity: .4; } }
+dialog::backdrop { background: rgba(8, 8, 20, .55); backdrop-filter: blur(2px); }
+.dlg { padding: 22px; display: grid; gap: 16px; }
+.dlg-h { display: flex; justify-content: space-between; align-items: start; gap: 12px; }
+.dlg-h h2 { font-size: clamp(26px, 6vw, 40px); line-height: 1; }
+.dlg-nav { display: flex; gap: 6px; }
+.x { font: 600 13px var(--body); border: 1px solid var(--line); background: var(--soft); color: var(--ink); border-radius: var(--r); padding: 6px 11px; cursor: pointer; transition: border-color .2s; }
+.x:hover { border-color: var(--accent); } .x:disabled { opacity: .4; cursor: default; }
+.x:focus-visible { outline: 2px solid var(--accent); }
+.pairs { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.pair { background: var(--soft); border-radius: var(--r); padding: 9px 11px; animation: rise .4s var(--ease) backwards; animation-delay: calc(var(--i, 0) * 35ms); }
+.pair span { display: block; font-size: 12px; color: var(--muted); }
+.pair b { font-family: var(--mono); font-size: 17px; font-weight: 500; }
+.verdict { font-size: 15px; padding: 12px 14px; border-radius: var(--r); background: var(--normal-soft); }
+footer { font-size: 13px; color: var(--muted); }
+@media (max-width: 520px) { .row { grid-template-columns: 30px minmax(0, 1fr) auto; } .row .bar { display: none; } .row .chip { font-size: 10px; padding: 1px 6px; }
+  .sens > div { grid-template-columns: minmax(0, 1fr) 70px 70px; } .heat { grid-template-columns: 74px repeat(3, minmax(0, 1fr)); } }
+
+/* scroll progress, under the rail */
+.prog { position: absolute; left: 0; right: 0; bottom: -1px; height: 2px; background: var(--accent); transform-origin: 0 50%; transform: scaleX(var(--p, 0)); }
+
+/* 3D pressure landscape */
+.land { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr); gap: 16px; }
+@media (max-width: 860px) { .land { grid-template-columns: 1fr; } }
+.stage { position: relative; height: clamp(380px, 72vh, 700px); overflow: hidden; touch-action: pan-y; cursor: grab;
+  background: radial-gradient(60% 55% at 60% 45%, var(--glow), transparent 70%); }
+.stage .axis3.pk { color: var(--accent); font-size: 13px; font-weight: 600; }
+.stage.drag { cursor: grabbing; }
+.stage canvas { display: block; width: 100%; height: 100%; }
+.stage .tip3 { position: absolute; pointer-events: none; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 8px 10px; font-size: 13px; box-shadow: var(--shadow); opacity: 0; transform: translate(-50%, calc(-100% - 12px)); transition: opacity .15s; white-space: nowrap; }
+.stage .tip3.on { opacity: 1; }
+.stage .hint3 { position: absolute; left: 12px; bottom: 10px; font: 12px var(--mono); color: var(--muted); pointer-events: none; }
+.stage .axis3 { position: absolute; font: 11.5px var(--mono); color: var(--muted); pointer-events: none; transform: translate(-50%, -50%); white-space: nowrap; }
+.stage .axis3.t { color: var(--ink); font-weight: 500; }
+.stage.no3d { display: grid; place-items: center; cursor: default; padding: 20px; text-align: center; color: var(--muted); }
+.scale3 { display: flex; align-items: center; gap: 8px; font: 12px var(--mono); color: var(--muted); }
+.scale3 i { flex: 1; height: 8px; border-radius: 4px; background: linear-gradient(90deg, var(--soft), var(--accent)); }
+.facts { display: grid; gap: 12px; align-content: start; }
+.fact { border-left: 3px solid var(--accent); padding: 2px 0 2px 12px; }
+.fact b { font: 600 22px var(--mono); display: block; }
+
+/* scroll reveal + tilt (only when motion is allowed and JS runs) */
+/* broadcast wipe: blocks cut in left to right, once */
+.anim .rv { clip-path: inset(0 100% 0 0); transition: clip-path .55s var(--ease); transition-delay: calc(var(--d, 0) * 80ms); }
+.anim .rv.in { clip-path: inset(0 0 0 0); }
+
+/* ---------- "Under the lights" ---------- */
+.wrap { gap: clamp(56px, 9vw, 104px); }
+header.top { position: relative; padding-block: clamp(40px, 7vw, 88px) 0; }
+header.top::before { content: ""; position: absolute; z-index: -1; inset: -120px -30vw auto; height: 720px; pointer-events: none;
+  background: radial-gradient(42% 60% at 50% 0%, var(--glow), transparent 70%), radial-gradient(18% 30% at 50% 0%, color-mix(in srgb, #fff 9%, transparent), transparent 70%); }
+.anim header.top::before { animation: flood 2.2s var(--ease) both; }
+@keyframes flood { 0% { opacity: 0; transform: translateX(-12%) scaleX(.6); } 35% { opacity: .5; } 60% { opacity: 1; } 100% { opacity: 1; transform: none; } }
+h1.slam { font-size: clamp(52px, 11vw, 120px); line-height: .86; letter-spacing: -.005em; }
+h1.slam span { display: block; }
+.kicker { font: 500 12px var(--mono); letter-spacing: .16em; text-transform: uppercase; color: var(--muted); display: flex; gap: 10px; align-items: flex-start; }
+.kicker i { flex: none; margin-top: 3px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px var(--glow); }
+.lede { font-size: 17px; color: var(--muted); max-width: 46ch; }
+.lede b { color: var(--ink); font-weight: 600; }
+
+/* split-flap scoreboard */
+.board3 { display: grid; gap: 6px; max-width: 980px; padding: clamp(14px, 2.4vw, 26px) !important; background: color-mix(in srgb, var(--ink) 92%, var(--bg)); color: var(--bg); padding: 14px; border-radius: var(--r); box-shadow: 0 30px 80px -40px var(--glow); }
+:root:not([data-theme="light"]) .board3 { background: #05060c; color: #f3f2fa; }
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) .board3 { background: #0d0e1b; color: #f3f2fa; } }
+.brow { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "tag tag" "flap sc"; gap: 4px 12px; align-items: center; cursor: pointer; border: 0; background: none; color: inherit; padding: 0; text-align: left; font: inherit; }
+.brow:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.brow .tag { grid-area: tag; font: 500 11px var(--mono); letter-spacing: .14em; color: #ff4f93; }
+.brow .sc { grid-area: sc; }
+.brow + .brow { margin-top: 10px; }
+.flap { grid-area: flap; display: flex; flex-wrap: nowrap; gap: 2px; min-width: 0; }
+.flap span { display: inline-grid; place-items: center; flex: 0 1 44px; min-width: 0; aspect-ratio: 44 / 60; background: #171a2c;
+  border-radius: 2px; font: 700 clamp(17px, 3.6vw, 42px) var(--display); text-transform: uppercase; position: relative; overflow: hidden; color: #f3f2fa; }
+.flap span::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: rgba(0,0,0,.65); }
+.flap span.sp { background: transparent; }
+.brow .sc { font: 500 clamp(26px, 5.6vw, 76px) var(--mono); color: #ff4f93; font-variant-numeric: tabular-nums; text-shadow: 0 0 34px rgba(255,79,147,.45); }
+
+/* label/value stat strip */
+.strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); border-top: 1px solid var(--line); }
+.strip > div { padding: 16px 16px 4px 0; display: grid; gap: 4px; align-content: start; }
+.strip > div + div { padding-left: 16px; border-left: 1px solid var(--line); }
+.strip b { font: 700 clamp(34px, 4.6vw, 54px) / 1 var(--display); font-variant-numeric: tabular-nums; }
+.strip b.p { color: var(--accent); }
+.strip span { font-size: 13px; color: var(--muted); line-height: 1.35; max-width: 24ch; }
+@media (max-width: 520px) { .strip > div + div { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); } }
+
+/* one claim, one number */
+.claim { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: clamp(20px, 4vw, 56px); align-items: end; }
+@media (max-width: 860px) { .claim { grid-template-columns: 1fr; } }
+.claim h2 { font-size: clamp(34px, 5.4vw, 64px); line-height: .95; }
+.claim p { color: var(--muted); font-size: 16px; max-width: 44ch; margin-top: 12px; }
+.bigs { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr)); gap: 2px; }
+.big { padding: 18px 18px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); display: grid; gap: 6px; align-content: start; }
+.big.p { background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 16%, var(--surface)), var(--surface) 70%); border-color: color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.big b { font: 700 clamp(56px, 8vw, 112px) / .9 var(--display); font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.big.p b { color: var(--accent); }
+.big .vs { font-size: .45em; color: var(--muted); margin: 0 .15em; }
+.bigs.flat .big { background: none; border: 0; border-left: 1px solid var(--line); border-radius: 0; padding: 4px 0 4px 18px; }
+.bigs.flat .big.p b { color: var(--accent); }
+.mega { display: grid; justify-items: start; gap: 8px; }
+.mega b { font: 700 clamp(140px, 24vw, 300px) / .78 var(--display); color: var(--accent); letter-spacing: -.02em; text-shadow: 0 0 60px var(--glow); }
+.mega span { color: var(--muted); font-size: 15px; max-width: 34ch; }
+.mega span strong { color: var(--ink); }
+.checks { display: grid; gap: 30px; }
+.checks > div { border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 10px; align-content: start; min-width: 0; }
+.score4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.score4 > div { padding: 22px 18px 18px; display: grid; gap: 8px; align-content: start; }
+.score4 > div + div { border-left: 1px solid var(--line); }
+.score4 b { font: 700 clamp(52px, 7vw, 104px) / .9 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.score4 b.p { color: var(--accent); }
+.score4 b .vs { font-size: .42em; color: var(--muted); margin: 0 .12em; }
+.score4 span { font-size: 13.5px; color: var(--muted); line-height: 1.35; }
+@media (max-width: 860px) { .score4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .score4 > div:nth-child(3) { border-left: 0; } .score4 > div:nth-child(n+3) { border-top: 1px solid var(--line); } }
+.big b.dbl { font-size: clamp(38px, 4vw, 58px); white-space: nowrap; }
+.big span { font-size: 14px; color: var(--muted); max-width: 30ch; line-height: 1.4; }
+.big span strong { color: var(--ink); font-weight: 600; }
+
+/* evidence drawer */
+details.more { border-top: 1px solid var(--line); }
+details.more > summary { list-style: none; cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 12px 2px; font: 500 12.5px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); transition: color .16s; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::after { content: "+"; font: 400 22px/1 var(--mono); color: var(--accent); transition: transform .45s var(--ease); }
+details.more[open] > summary::after { transform: rotate(45deg); }
+details.more > summary:hover { color: var(--ink); }
+details.more > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+details.more > .in { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 4px 0 18px; }
+.wrap > *, section > *, details.more, details.more > .in > * { min-width: 0; }
+.gut:not(.rail) { overflow-x: clip; }   /* the floodlight bloom spills past the edges; clip it here, not on body (body overflow passes to the viewport) */
+details.more[open] > .in { animation: drop .45s var(--ease); }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px); } }
+.big details.more { margin-top: 8px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 2px; }
+.tile { padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); display: grid; gap: 6px; align-content: start; }
+.tile small { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.tile b { font: 700 clamp(30px, 3.6vw, 42px) / 1 var(--display); font-variant-numeric: tabular-nums; }
+.tile span { font-size: 13px; color: var(--muted); line-height: 1.4; }
+.anim .tilt { transition: transform .35s var(--ease), box-shadow .35s var(--ease); will-change: transform; }
+.anim .tilt.hov { transition: transform .08s linear, box-shadow .35s var(--ease); box-shadow: var(--shadow); }
+.anim h1 { will-change: transform; }
+
+/* ---------- Round 4: night bands in both themes, one layout per section ---------- */
+.night { --bg: #0b0b16; --surface: #14152a; --ink: #ecebf5; --muted: #a1a3bc; --line: #2a2c47; --soft: #1c1f36;
+  --accent: #ff4f93; --accent-soft: #3a1628; --accent-ink: #1a0610; --normal: #84a5ff; --normal-soft: #1a2445;
+  --glow: color-mix(in srgb, #ff4f93 24%, transparent); --shadow: 0 1px 2px rgba(0,0,0,.3), 0 10px 30px -14px rgba(0,0,0,.6);
+  color: var(--ink); color-scheme: dark; position: relative; isolation: isolate; }
+.night::after { content: ""; position: absolute; z-index: -2; inset: 0 -50vw; pointer-events: none;
+  background: radial-gradient(120% 80% at 50% 0%, #1a0f1c, #07070c 70%); }
+header.top.night { padding-bottom: clamp(36px, 5vw, 60px); }
+header.top.night::before { inset: 0 -30vw auto; }
+#land.night { padding-block: clamp(52px, 7vw, 96px); }
+#land.night::after { background: radial-gradient(90% 70% at 55% 60%, #1c0f1e, #07070c 72%); }
+.night .board3 { max-width: none; background: #05060c !important; color: #f3f2fa !important; border: 1px solid #22243c; }
+.night .stage { background: radial-gradient(55% 50% at 58% 52%, color-mix(in srgb, #ff4f93 14%, transparent), transparent 72%); }
+.rail { color: var(--ink); }
+
+/* why: one broadcast lower-third */
+.whyh { display: grid; gap: 10px; max-width: 900px; }
+.whyh h2 { font-size: clamp(34px, 5.4vw, 64px); line-height: .95; }
+.lower3 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-left: 4px solid var(--accent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 6%, transparent), transparent 85%); }
+.lower3 > div { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "s s" "b t"; column-gap: 18px; row-gap: 2px; align-items: center; padding: 16px 24px 18px; }
+.lower3 > div + div { border-left: 1px solid var(--line); }
+.lower3 small { grid-area: s; font: 500 11.5px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.lower3 b { grid-area: b; font: 700 clamp(48px, 6vw, 84px) / .95 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lower3 .p b { color: var(--accent); text-shadow: 0 0 40px var(--glow); }
+.lower3 b .vs { font-size: .45em; color: var(--muted); margin: 0 .12em; }
+.lower3 span:not(.vs) { grid-area: t; font-size: 14px; color: var(--muted); line-height: 1.35; max-width: 22ch; }
+@media (max-width: 700px) { .lower3 { grid-template-columns: 1fr; } .lower3 > div + div { border-left: 0; border-top: 1px solid var(--line); } .lower3 > div { padding: 14px 16px; } }
+
+/* line: one centred numeral */
+.ctr { display: grid; justify-items: center; text-align: center; gap: 10px; }
+.ctr h2 { font-size: clamp(26px, 3.4vw, 40px); color: var(--muted); }
+.ctr > p { max-width: 52ch; font-size: 15px; }
+.mega.c { justify-items: center; text-align: center; }
+.mega.c b { font-size: clamp(160px, 22vw, 320px); }
+.mega.c span { max-width: 46ch; }
+
+/* robust: unboxed rows on a hairline */
+.sens-wrap { border-top: 1px solid var(--line); padding-top: 10px; }
+
+/* limits: one caution ticker */
+.ticker { display: flex; flex-wrap: wrap; align-items: stretch; border-block: 1px solid var(--line); font: 13px/1.35 var(--mono); color: var(--muted); }
+.ticker em { font-style: normal; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; font-size: 11.5px; background: var(--ink); color: var(--bg);
+  padding: 12px 14px; display: flex; align-items: center; }
+.ticker > span { padding: 12px 18px; border-right: 1px solid var(--line); display: flex; align-items: center; gap: 8px; }
+.ticker > span:last-child { border-right: 0; }
+.ticker b { color: var(--ink); font-weight: 500; white-space: nowrap; }
+@media (max-width: 700px) { .ticker { flex-direction: column; } .ticker > span { border-right: 0; border-top: 1px solid var(--line); padding-inline: 0; } .ticker em { align-self: flex-start; } }
+
+/* lists: no card chrome, one hairline between the columns, big rank numerals */
+#lists .two { gap: 0; }
+#lists .panel { background: none; border: 0; padding: 0; border-radius: 0; }
+#lists .panel:first-child { padding-right: 28px; }
+#lists .panel + .panel { border-left: 1px solid var(--line); padding-left: 28px; }
+@media (max-width: 980px) { #lists .panel:first-child { padding-right: 0; } #lists .panel + .panel { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 18px; margin-top: 18px; } }
+.row { grid-template-columns: 58px minmax(0, 1fr) 96px 78px; }
+.rk { font-size: 44px; line-height: .9; }
+@media (max-width: 520px) { .row { grid-template-columns: 40px minmax(0, 1fr) auto; } .rk { font-size: 32px; } }
+
+/* lab: unboxed, the pool plot holds its place while the list scrolls */
+.lab { gap: clamp(20px, 3vw, 40px); }
+.lab > .panel { background: none; border: 0; padding: 0; border-radius: 0; }
+.lab > .panel.pool { align-self: start; position: sticky; top: 64px; }
+@media (max-width: 860px) { .lab > .panel.pool { position: static; } }
+
+/* phone picker, focus, tables */
+.cur { font: 600 14px var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); background: var(--bg); }
+.links a:focus-visible, a:focus-visible, footer a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#d-name:focus { outline: none; }
+.pt .lead { stroke: var(--muted); stroke-width: 1; opacity: 0; } .pt.top .lead { opacity: .8; }
+@media (max-width: 420px) { .find { flex: 0 0 78px; min-width: 0; } .rail-in { gap: 10px; } .brand { font-size: 15px; } }
+@media (max-width: 560px) { .pc-rk { text-shadow: 0 0 22px var(--glow); } .stage .axis3 { font-size: 10px; } .stage { height: auto; aspect-ratio: 4 / 5; max-height: 72vh; } }
+.scroll.ov { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent); }
+table:has(tbody tr:first-child > td.n:nth-child(2)) th:nth-child(2), table:has(tbody tr:first-child > td.n:nth-child(3)) th:nth-child(3),
+table:has(tbody tr:first-child > td.n:nth-child(4)) th:nth-child(4), table:has(tbody tr:first-child > td.n:nth-child(5)) th:nth-child(5),
+table:has(tbody tr:first-child > td.n:nth-child(6)) th:nth-child(6), table:has(tbody tr:first-child > td.n:nth-child(7)) th:nth-child(7),
+table:has(tbody tr:first-child > td.n:nth-child(8)) th:nth-child(8) { text-align: right; }
+#rise { width: auto; min-width: min(100%, 560px); }
+</style>
+
+<nav class="rail gut" aria-label="Sections"><div class="rail-in">
+  <span class="brand">Pressure <b>Board</b></span>
+  <select class="cur" id="cursec" aria-label="Jump to section"></select>
+  <div class="links" id="links">
+    <a href="#lists">Lists</a><a href="#land">Pressure in 3D</a><a href="#why">Why output</a><a href="#tested">Tested</a><a href="#lab">What-if lab</a><a href="#line">Pressure line</a><a href="#robust">Robustness</a><a href="#limits">Limits</a>
+  </div>
+  <div class="find"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+    <input id="q" type="search" placeholder="Find any player" autocomplete="off" aria-label="Find any player" aria-controls="hits">
+    <div class="hits" id="hits" hidden></div></div>
+</div><div class="prog" id="prog" aria-hidden="true"></div></nav>
+
+<div class="gut"><div class="wrap">
+  <header class="top night">
+    <div class="kicker"><i></i><span>SupeRR Selector S2 · Round 1 · IPL + T20I since 2022</span></div>
+    <div class="hero">
+      <div style="display:grid;gap:22px">
+        <h1 class="slam"><span>Who holds</span><span>their <em>nerve</em></span></h1>
+        <p class="lede">The <b>10 batters</b> and <b>10 bowlers</b> who produce the most when one ball can swing the match.</p>
+      </div>
+      <div class="board3" id="flapboard" aria-label="Number one picks"></div>
+    </div>
+    <div class="strip" id="stats"></div>
+    <details class="more"><summary>What counts as a pressure ball</summary><div class="in">
+      <p>A ball is a <b>pressure ball</b> when its possible outcomes (dot, single, boundary, wicket) can swing the batting side's
+        chance of winning by at least 1.5 times as much as an average ball. Players are scored on those balls against an
+        average player facing the same balls.</p></div></details>
+  </header>
+
+  <section id="lists" aria-labelledby="h-lists">
+    <div class="sec-h"><h2 id="h-lists">The two lists</h2>
+      <span class="hint">Tap a player for the evidence <span class="chip firm">firm</span><span class="chip likely">likely</span><span class="chip near-tie">near-tie</span></span></div>
+    <div class="two">
+      <div class="panel"><div class="board-head"><h3>Batters</h3><span class="muted mono small" id="kc-bat"></span></div><div class="board pre" id="list-bat"></div></div>
+      <div class="panel"><div class="board-head"><h3>Bowlers</h3><span class="muted mono small" id="kc-bowl"></span></div><div class="board pre" id="list-bowl"></div></div>
+    </div>
+    <details class="more"><summary>What firm, likely and near-tie mean</summary><div class="in">
+      <p class="muted">How often a pick stays in the top 10 when the matches are resampled 300 times: firm 75%+, likely 50-75%,
+        near-tie under 50%. The share in each header is how much of the rating comes from pressure balls; the rest is the
+        player's usual form, which steadies small samples.</p></div></details>
+  </section>
+
+  <section id="land" class="night" aria-labelledby="h-land">
+    <div class="claim">
+      <div><h2 id="h-land">Pressure lives at the end of a tight chase</h2>
+        <p>Each tower is a chase situation. Taller means more of the match rides on one ball.</p></div>
+      <div class="bigs flat">
+        <div class="big p"><b class="num" id="f-peak"></b><span id="f-peak-t"></span></div>
+        <div class="big"><b class="num" id="f-share"></b><span>of chase balls are pressure balls</span></div>
+      </div>
+    </div>
+    <div class="stage" id="stage" role="img" aria-label="3D chart: average Pressure Index in a chase by required run rate and overs left. Pressure is highest when few overs remain and the required rate is 8 to 14."></div>
+    <div class="scale3"><span>0×</span><i></i><span id="f-max"></span></div>
+  </section>
+
+  <section id="why" aria-labelledby="h-why">
+    <div class="whyh"><h2 id="h-why">Rising to the occasion is mostly luck. Output is not.</h2>
+      <p class="muted">Split each player's matches in two and check what carries over from one half to the other.</p></div>
+    <div class="lower3" id="why-bigs"></div>
+    <details class="more"><summary>See the split-half test</summary><div class="in">
+      <div class="two">
+        <div class="panel"><h3 style="margin-bottom:10px">Does it repeat? (split-half r)</h3><div id="repeat"></div>
+          <div class="legend" style="margin-top:6px"><span style="--c:var(--ink)">Batters (upper bar)</span><span style="--c:var(--muted)">Bowlers (lower bar)</span><span class="nomark">pink = what we rank</span></div></div>
+        <div class="callout" id="odd"></div>
+      </div></div></details>
+  </section>
+
+  <section id="tested" aria-labelledby="h-tested">
+    <div class="claim">
+      <div><h2 id="h-tested">Tested against every obvious alternative</h2>
+        <p>Four checks against the obvious ways to pick a list.</p></div>
+      <div></div>
+    </div>
+    <div class="score4">
+      <div><b class="num p" id="t-dec"></b><span id="t-dec-s"></span></div>
+      <div><b class="num" id="t-rise"></b><span id="t-rise-s"></span></div>
+      <div><b class="num" id="t-naive"></b><span id="t-naive-s"></span></div>
+      <div><b class="num" id="t-bt"></b><span id="t-bt-s"></span></div>
+    </div>
+    <details class="more"><summary>Open the four checks</summary><div class="in"><div class="checks">
+      <div><h3>Do pressure balls decide matches?</h3><div class="sens" id="decides"></div></div>
+      <div><h3>Who rises, who dips</h3><div class="scroll"><table id="rise"></table></div>
+        <details class="more"><summary>Who they are</summary><div class="in"><div id="rise-names" class="small"></div></div></details></div>
+      <div><h3>Against a death-overs list</h3><p class="muted small" id="naive-h"></p>
+        <div class="seg" id="nv-seg" role="group" aria-label="Role" style="--n:2;justify-self:start"><button data-r="bat" aria-pressed="true">Batters</button><button data-r="bowl" aria-pressed="false">Bowlers</button></div>
+        <div class="scroll"><table id="naive"></table></div></div>
+      <div><h3>Head-to-head backtest</h3><p class="small" id="bt-note"></p><div class="scroll"><table id="bt"></table></div></div>
+    </div></div></details>
+  </section>
+
+  <section id="lab" aria-labelledby="h-lab">
+    <div class="sec-h"><h2 id="h-lab">What-if lab</h2>
+      <div class="seg" id="role-seg" role="group" aria-label="Role" style="--n:2"><button data-role="bat" aria-pressed="true">Batters</button><button data-role="bowl" aria-pressed="false">Bowlers</button></div></div>
+    <p class="muted">Change the settings. The whole pool re-ranks live with the report's exact formula.</p>
+    <div class="lab">
+      <div class="panel" style="display:grid;gap:18px;align-content:start">
+        <div class="ctl"><label for="kc">How much usual form counts (KC) <output id="kc-o"></output></label>
+          <input type="range" id="kc" min="0" max="3000" step="25"><div class="presets" id="kc-p"></div></div>
+        <div class="ctl"><label for="gate">Gate: top share under pressure <output id="gate-o"></output></label>
+          <input type="range" id="gate" min="0.10" max="1" step="0.05"><div class="presets" id="gate-p"></div></div>
+        <div class="kept"><div class="kept-n" id="kept"></div><div class="segs" id="segs"></div></div>
+        <div class="wi" id="wi" aria-live="polite"></div>
+      </div>
+      <div class="panel pool" style="display:grid;gap:12px;min-width:0;align-content:start">
+        <div class="board-head" style="margin:0"><h3>The whole pool</h3>
+          <div class="seg" id="y-seg" role="group" aria-label="Vertical axis" style="--n:2"><button data-y="A" aria-pressed="true">Pressure output</button><button data-y="E" aria-pressed="false">Rating</button></div></div>
+        <div class="sc-wrap" id="sc-wrap"><div id="scatter"></div><div class="tip" id="tip"></div></div>
+        <div class="legend"><span style="--c:var(--accent)">Top 10 now</span><span class="sz">Passes the gate</span><span style="--c:var(--line)">Outside the gate</span><span class="nomark">Bigger dot = more pressure balls</span></div>
+      </div>
+    </div>
+    <details class="more"><summary>How KC was chosen</summary><div class="in"><div class="two">
+      <div class="panel"><h3 style="margin-bottom:4px">Forecasting held-out pressure output</h3>
+        <p class="muted small" style="margin-bottom:10px">% better than a league-average guess. Dashed: usual form alone.</p><div id="kcc"></div></div>
+      <div class="panel" style="display:grid;gap:12px;align-content:start"><h3>Why bowlers use KC = <span id="kcb"></span></h3><p id="kc-why"></p></div>
+    </div></div></details>
+  </section>
+
+  <section id="line" aria-labelledby="h-line">
+    <div class="ctr">
+      <h2 id="h-line">The line sits at</h2>
+      <div class="mega c" id="line-bigs"></div>
+      <p class="muted">Lower and a quarter of all balls count as pressure. Higher and bowlers' pressure output stops repeating.</p>
+    </div>
+    <details class="more"><summary>Every line we tested</summary><div class="in"><div class="two">
+      <div class="panel scroll"><table id="cut"></table></div>
+      <div class="panel" style="display:grid;gap:12px;align-content:start"><h3>Share of balls that are pressure balls</h3><div class="heat" id="heat"></div></div>
+    </div></div></details>
+  </section>
+
+  <section id="robust" aria-labelledby="h-rob">
+    <div class="claim">
+      <div><h2 id="h-rob">Change a setting, the list holds</h2>
+        <p>Top-10 picks kept when one choice is changed.</p></div>
+      <div class="bigs flat" id="rob-bigs"></div>
+    </div>
+    <div class="sens-wrap"><div class="sens" id="sens"></div>
+      <details class="more" style="margin-top:10px"><summary>All other changes</summary><div class="in"><div class="sens" id="sens-more"></div></div></details></div>
+    <details class="more"><summary>Forecast test, seasons 2024-2026</summary><div class="in"><div class="panel scroll">
+      <p class="muted small" style="margin-bottom:8px">Each rating is built on earlier seasons only, then ranked against next-season pressure output.</p><table id="fwd"></table></div></div></details>
+  </section>
+
+  <section id="limits" aria-labelledby="h-lim">
+    <h2 id="h-lim">Where the model is less sure</h2>
+    <div class="ticker" id="lim-tiles"></div>
+    <details class="more"><summary>Every caveat in full</summary><div class="in"><ul class="lim" id="lim"></ul></div></details>
+  </section>
+  <footer>Every number is read from the report's output files.</footer>
+</div></div>
+
+<dialog id="dlg" aria-labelledby="d-name"><div class="dlg" id="dlg-c"></div></dialog>
+
+<script>
+const D = {"kc_used":{"bat":250,"bowl":300},"kc_forecast":{"bat":250,"bowl":2000},"gate":0.2,"roles":{"bat":{"players":[{"id":3647.0,"name":"Shreyas Iyer","p_rv":124.796,"p_wb":219.951,"normal":14.454,"A":26.766,"A_rank":1,"passes_gate":true,"rank":1,"score":34.244,"p_top10":0.857,"band":"firm","rank_p10":1.0,"rank_p90":14.0,"boot_median_rank":3.0,"p_balls":277.108,"n_balls":1487.892,"matches":92,"p_sr":165.22,"n_sr":151.904,"p_avg":52.155,"n_avg":34.654},{"id":6281.0,"name":"Abhishek Sharma","p_rv":72.939,"p_wb":345.21,"normal":43.414,"A":12.331,"A_rank":12,"passes_gate":true,"rank":2,"score":30.489,"p_top10":0.503,"band":"likely","rank_p10":1.0,"rank_p90":22.1,"boot_median_rank":6.5,"p_balls":422.896,"n_balls":1838.104,"matches":129,"p_sr":166.918,"n_sr":191.453,"p_avg":29.969,"n_avg":34.351},{"id":47.0,"name":"Virat Kohli","p_rv":121.554,"p_wb":276.132,"normal":5.216,"A":23.267,"A_rank":2,"passes_gate":true,"rank":3,"score":25.582,"p_top10":0.823,"band":"firm","rank_p10":2.0,"rank_p90":19.0,"boot_median_rank":6.0,"p_balls":374.844,"n_balls":2070.156,"matches":89,"p_sr":151.221,"n_sr":144.345,"p_avg":65.343,"n_avg":46.454},{"id":7897.0,"name":"Namboori Tilak Varma","p_rv":111.95,"p_wb":365.144,"normal":11.076,"A":18.309,"A_rank":5,"passes_gate":true,"rank":4,"score":22.7,"p_top10":0.617,"band":"likely","rank_p10":4.0,"rank_p90":24.0,"boot_median_rank":9.0,"p_balls":506.58,"n_balls":1949.42,"matches":121,"p_sr":150.48,"n_sr":141.719,"p_avg":37.257,"n_avg":42.806},{"id":23450.0,"name":"Sai Sudharsan","p_rv":83.109,"p_wb":248.516,"normal":8.741,"A":16.796,"A_rank":6,"passes_gate":true,"rank":5,"score":21.055,"p_top10":0.663,"band":"likely","rank_p10":4.0,"rank_p90":21.0,"boot_median_rank":8.0,"p_balls":303.782,"n_balls":1330.218,"matches":55,"p_sr":152.048,"n_sr":146.751,"p_avg":59.322,"n_avg":46.243},{"id":6931.0,"name":"Pathum Nissanka","p_rv":78.839,"p_wb":248.977,"normal":6.568,"A":15.918,"A_rank":7,"passes_gate":true,"rank":6,"score":19.091,"p_top10":0.493,"band":"near-tie","rank_p10":4.0,"rank_p90":30.0,"boot_median_rank":11.0,"p_balls":352.796,"n_balls":1175.204,"matches":71,"p_sr":144.506,"n_sr":133.95,"p_avg":29.236,"n_avg":32.416},{"id":5939.0,"name":"Cameron Green","p_rv":55.793,"p_wb":150.526,"normal":6.837,"A":14.06,"A_rank":10,"passes_gate":true,"rank":7,"score":18.197,"p_top10":0.523,"band":"likely","rank_p10":4.0,"rank_p90":30.0,"boot_median_rank":10.0,"p_balls":210.237,"n_balls":855.763,"matches":61,"p_sr":159.05,"n_sr":151.282,"p_avg":35.847,"n_avg":40.876},{"id":6819.0,"name":"Yashasvi Jaiswal","p_rv":96.608,"p_wb":260.446,"normal":-2.743,"A":19.064,"A_rank":4,"passes_gate":true,"rank":8,"score":17.583,"p_top10":0.5,"band":"likely","rank_p10":4.0,"rank_p90":34.0,"boot_median_rank":10.5,"p_balls":351.511,"n_balls":1470.489,"matches":86,"p_sr":172.259,"n_sr":150.596,"p_avg":42.658,"n_avg":33.652},{"id":818.0,"name":"Mitchell Marsh","p_rv":67.708,"p_wb":295.441,"normal":11.228,"A":12.498,"A_rank":11,"passes_gate":true,"rank":9,"score":17.56,"p_top10":0.467,"band":"near-tie","rank_p10":4.0,"rank_p90":31.0,"boot_median_rank":11.5,"p_balls":386.829,"n_balls":1272.171,"matches":79,"p_sr":143.434,"n_sr":159.896,"p_avg":31.441,"n_avg":35.468},{"id":4106.0,"name":"Daryl Mitchell","p_rv":48.851,"p_wb":98.519,"normal":4.085,"A":14.167,"A_rank":9,"passes_gate":true,"rank":10,"score":16.947,"p_top10":0.413,"band":"near-tie","rank_p10":5.0,"rank_p90":29.1,"boot_median_rank":12.0,"p_balls":154.379,"n_balls":951.621,"matches":66,"p_sr":166.398,"n_sr":144.608,"p_avg":38.042,"n_avg":27.387},{"id":7216.0,"name":"Prabhsimran Singh","p_rv":90.982,"p_wb":219.1,"normal":-5.735,"A":19.549,"A_rank":3,"passes_gate":true,"rank":11,"score":16.339,"p_top10":0.397,"band":"near-tie","rank_p10":5.0,"rank_p90":40.0,"boot_median_rank":11.0,"p_balls":266.849,"n_balls":819.151,"matches":60,"p_sr":163.171,"n_sr":158.283,"p_avg":51.151,"n_avg":25.681},{"id":3672.0,"name":"Kusal Mendis","p_rv":60.183,"p_wb":175.535,"normal":-5.139,"A":14.267,"A_rank":8,"passes_gate":true,"rank":12,"score":11.124,"p_top10":0.193,"band":"near-tie","rank_p10":9.0,"rank_p90":47.0,"boot_median_rank":23.5,"p_balls":281.052,"n_balls":996.948,"matches":64,"p_sr":145.101,"n_sr":129.514,"p_avg":44.357,"n_avg":25.924},{"id":5553.0,"name":"Phil Salt","p_rv":56.461,"p_wb":214.026,"normal":23.112,"A":12.265,"A_rank":13,"passes_gate":false,"rank":13,"score":24.62,"p_top10":0.453,"band":"near-tie","rank_p10":1.0,"rank_p90":29.0,"boot_median_rank":13.0,"p_balls":297.646,"n_balls":1299.354,"matches":79,"p_sr":169.475,"n_sr":171.128,"p_avg":36.114,"n_avg":38.988},{"id":6396.0,"name":"Tim David","p_rv":27.239,"p_wb":169.09,"normal":26.845,"A":6.557,"A_rank":24,"passes_gate":false,"rank":14,"score":22.513,"p_top10":0.227,"band":"near-tie","rank_p10":2.0,"rank_p90":24.0,"boot_median_rank":15.0,"p_balls":282.271,"n_balls":886.729,"matches":93,"p_sr":173.754,"n_sr":177.906,"p_avg":25.529,"n_avg":39.648},{"id":1699.0,"name":"Suryakumar Yadav","p_rv":44.566,"p_wb":274.468,"normal":26.262,"A":8.558,"A_rank":19,"passes_gate":false,"rank":15,"score":21.016,"p_top10":0.293,"band":"near-tie","rank_p10":2.0,"rank_p90":27.0,"boot_median_rank":15.0,"p_balls":437.762,"n_balls":2221.238,"matches":133,"p_sr":160.184,"n_sr":167.689,"p_avg":32.974,"n_avg":40.166},{"id":4853.0,"name":"Glenn Phillips","p_rv":23.131,"p_wb":104.17,"normal":19.52,"A":6.6,"A_rank":23,"passes_gate":false,"rank":16,"score":20.309,"p_top10":0.063,"band":"near-tie","rank_p10":13.0,"rank_p90":27.0,"boot_median_rank":15.0,"p_balls":164.119,"n_balls":890.881,"matches":54,"p_sr":132.232,"n_sr":152.544,"p_avg":36.679,"n_avg":33.904},{"id":813.0,"name":"Jos Buttler","p_rv":51.394,"p_wb":245.993,"normal":14.23,"A":10.44,"A_rank":14,"passes_gate":false,"rank":17,"score":17.534,"p_top10":0.36,"band":"near-tie","rank_p10":4.0,"rank_p90":31.0,"boot_median_rank":16.0,"p_balls":339.751,"n_balls":2346.249,"matches":115,"p_sr":156.018,"n_sr":156.033,"p_avg":31.267,"n_avg":43.046},{"id":4260.0,"name":"Heinrich Klaasen","p_rv":10.81,"p_wb":112.284,"normal":18.567,"A":3.015,"A_rank":32,"passes_gate":false,"rank":18,"score":15.796,"p_top10":0.12,"band":"near-tie","rank_p10":6.9,"rank_p90":35.0,"boot_median_rank":19.0,"p_balls":162.246,"n_balls":1247.754,"matches":70,"p_sr":184.782,"n_sr":164.712,"p_avg":24.811,"n_avg":44.759},{"id":4736.0,"name":"Josh Inglis","p_rv":38.209,"p_wb":129.418,"normal":8.597,"A":10.17,"A_rank":15,"passes_gate":false,"rank":19,"score":15.735,"p_top10":0.297,"band":"near-tie","rank_p10":4.0,"rank_p90":40.1,"boot_median_rank":17.0,"p_balls":167.881,"n_balls":687.119,"matches":52,"p_sr":162.856,"n_sr":164.978,"p_avg":32.366,"n_avg":30.187},{"id":4708.0,"name":"Rinku Singh","p_rv":27.423,"p_wb":107.723,"normal":9.911,"A":7.746,"A_rank":21,"passes_gate":false,"rank":20,"score":14.593,"p_top10":0.097,"band":"near-tie","rank_p10":11.0,"rank_p90":40.0,"boot_median_rank":22.5,"p_balls":173.698,"n_balls":1071.302,"matches":82,"p_sr":176.368,"n_sr":147.825,"p_avg":36.763,"n_avg":38.007},{"id":3700.0,"name":"Tim Seifert","p_rv":29.375,"p_wb":109.911,"normal":8.919,"A":8.247,"A_rank":20,"passes_gate":false,"rank":21,"score":14.357,"p_top10":0.22,"band":"near-tie","rank_p10":3.0,"rank_p90":45.1,"boot_median_rank":20.0,"p_balls":153.049,"n_balls":545.951,"matches":39,"p_sr":150.162,"n_sr":152.611,"p_avg":35.675,"n_avg":27.266},{"id":4986.0,"name":"Rovman Powell","p_rv":36.819,"p_wb":162.233,"normal":6.879,"A":9.013,"A_rank":18,"passes_gate":false,"rank":22,"score":13.104,"p_top10":0.15,"band":"near-tie","rank_p10":9.0,"rank_p90":36.0,"boot_median_rank":23.0,"p_balls":251.691,"n_balls":1282.309,"matches":98,"p_sr":164.015,"n_sr":141.868,"p_avg":25.825,"n_avg":27.981},{"id":4117.0,"name":"Ishan Kishan","p_rv":26.342,"p_wb":235.107,"normal":14.212,"A":5.472,"A_rank":25,"passes_gate":false,"rank":23,"score":12.755,"p_top10":0.173,"band":"near-tie","rank_p10":7.0,"rank_p90":45.0,"boot_median_rank":22.0,"p_balls":329.8,"n_balls":2056.2,"matches":118,"p_sr":138.108,"n_sr":147.141,"p_avg":32.042,"n_avg":30.941},{"id":6288.0,"name":"Shubman Gill","p_rv":54.217,"p_wb":294.755,"normal":5.325,"A":10.021,"A_rank":16,"passes_gate":false,"rank":24,"score":12.396,"p_top10":0.247,"band":"near-tie","rank_p10":7.0,"rank_p90":44.0,"boot_median_rank":23.0,"p_balls":436.376,"n_balls":2170.624,"matches":107,"p_sr":139.487,"n_sr":151.722,"p_avg":39.856,"n_avg":41.307},{"id":2367.0,"name":"Travis Head","p_rv":24.874,"p_wb":233.917,"normal":9.332,"A":5.18,"A_rank":26,"passes_gate":false,"rank":25,"score":9.961,"p_top10":0.207,"band":"near-tie","rank_p10":5.0,"rank_p90":50.0,"boot_median_rank":26.0,"p_balls":301.499,"n_balls":794.501,"matches":64,"p_sr":159.537,"n_sr":183.259,"p_avg":43.476,"n_avg":28.034},{"id":22565.0,"name":"Muhammad Waseem","p_rv":-6.707,"p_wb":106.165,"normal":16.021,"A":-1.903,"A_rank":44,"passes_gate":false,"rank":26,"score":9.362,"p_top10":0.0,"band":"near-tie","rank_p10":18.0,"rank_p90":41.1,"boot_median_rank":28.0,"p_balls":151.521,"n_balls":307.479,"matches":20,"p_sr":131.855,"n_sr":152.6,"p_avg":21.795,"n_avg":43.312},{"id":2984.0,"name":"Sikandar Raza","p_rv":14.279,"p_wb":137.771,"normal":6.988,"A":3.718,"A_rank":30,"passes_gate":false,"rank":27,"score":8.188,"p_top10":0.03,"band":"near-tie","rank_p10":16.0,"rank_p90":44.0,"boot_median_rank":28.5,"p_balls":227.235,"n_balls":746.765,"matches":55,"p_sr":136.446,"n_sr":135.779,"p_avg":25.632,"n_avg":28.241},{"id":2436.0,"name":"Dasun Shanaka","p_rv":24.631,"p_wb":98.089,"normal":1.464,"A":7.152,"A_rank":22,"passes_gate":false,"rank":28,"score":8.128,"p_top10":0.05,"band":"near-tie","rank_p10":15.0,"rank_p90":44.0,"boot_median_rank":30.0,"p_balls":176.242,"n_balls":561.758,"matches":58,"p_sr":171.89,"n_sr":133.342,"p_avg":24.916,"n_avg":21.499},{"id":4755.0,"name":"Shivam Dube","p_rv":15.704,"p_wb":178.215,"normal":7.617,"A":3.699,"A_rank":31,"passes_gate":false,"rank":29,"score":8.114,"p_top10":0.017,"band":"near-tie","rank_p10":19.0,"rank_p90":42.0,"boot_median_rank":28.5,"p_balls":229.905,"n_balls":1271.095,"matches":95,"p_sr":139.846,"n_sr":156.124,"p_avg":30.079,"n_avg":32.904},{"id":4391.0,"name":"Liam Livingstone","p_rv":15.061,"p_wb":102.586,"normal":4.756,"A":4.317,"A_rank":28,"passes_gate":false,"rank":30,"score":7.644,"p_top10":0.04,"band":"near-tie","rank_p10":15.0,"rank_p90":48.0,"boot_median_rank":31.0,"p_balls":169.667,"n_balls":818.333,"matches":67,"p_sr":149.514,"n_sr":155.478,"p_avg":22.706,"n_avg":29.03},{"id":4369.0,"name":"Shai Hope","p_rv":1.859,"p_wb":117.616,"normal":9.52,"A":0.511,"A_rank":37,"passes_gate":false,"rank":31,"score":6.98,"p_top10":0.013,"band":"near-tie","rank_p10":18.0,"rank_p90":51.0,"boot_median_rank":33.0,"p_balls":157.785,"n_balls":885.215,"matches":54,"p_sr":125.375,"n_sr":145.521,"p_avg":25.844,"n_avg":33.594},{"id":6059.0,"name":"Ruturaj Gaikwad","p_rv":38.478,"p_wb":159.22,"normal":-4.69,"A":9.489,"A_rank":17,"passes_gate":false,"rank":32,"score":6.537,"p_top10":0.127,"band":"near-tie","rank_p10":10.0,"rank_p90":47.1,"boot_median_rank":30.0,"p_balls":217.033,"n_balls":1576.967,"matches":76,"p_sr":132.645,"n_sr":140.086,"p_avg":50.831,"n_avg":36.016},{"id":953.0,"name":"Lokesh Rahul","p_rv":12.748,"p_wb":240.24,"normal":6.961,"A":2.62,"A_rank":33,"passes_gate":false,"rank":33,"score":6.15,"p_top10":0.123,"band":"near-tie","rank_p10":9.0,"rank_p90":53.0,"boot_median_rank":31.0,"p_balls":312.366,"n_balls":1682.634,"matches":73,"p_sr":144.332,"n_sr":141.217,"p_avg":30.976,"n_avg":48.056},{"id":6423.0,"name":"Riyan Parag","p_rv":5.492,"p_wb":116.022,"normal":5.608,"A":1.516,"A_rank":35,"passes_gate":false,"rank":34,"score":5.331,"p_top10":0.0,"band":"near-tie","rank_p10":20.0,"rank_p90":47.0,"boot_median_rank":33.0,"p_balls":164.232,"n_balls":909.768,"matches":68,"p_sr":157.872,"n_sr":149.788,"p_avg":22.314,"n_avg":29.381},{"id":2258.0,"name":"Sanju Samson","p_rv":-7.958,"p_wb":267.708,"normal":12.163,"A":-1.548,"A_rank":42,"passes_gate":false,"rank":35,"score":4.336,"p_top10":0.057,"band":"near-tie","rank_p10":16.0,"rank_p90":51.1,"boot_median_rank":33.5,"p_balls":340.056,"n_balls":1869.944,"matches":120,"p_sr":150.071,"n_sr":155.87,"p_avg":27.064,"n_avg":34.232},{"id":20702.0,"name":"Tristan Stubbs","p_rv":-7.79,"p_wb":172.052,"normal":9.197,"A":-1.862,"A_rank":43,"passes_gate":false,"rank":36,"score":3.602,"p_top10":0.003,"band":"near-tie","rank_p10":22.0,"rank_p90":50.0,"boot_median_rank":35.0,"p_balls":210.168,"n_balls":796.832,"matches":64,"p_sr":133.488,"n_sr":152.786,"p_avg":28.048,"n_avg":34.787},{"id":6651.0,"name":"Towhid Hridoy","p_rv":14.156,"p_wb":133.838,"normal":-0.635,"A":3.724,"A_rank":29,"passes_gate":false,"rank":37,"score":3.275,"p_top10":0.02,"band":"near-tie","rank_p10":22.0,"rank_p90":48.0,"boot_median_rank":36.0,"p_balls":186.751,"n_balls":752.249,"matches":49,"p_sr":126.098,"n_sr":125.16,"p_avg":42.93,"n_avg":28.957},{"id":1077.0,"name":"David Miller","p_rv":19.89,"p_wb":147.165,"normal":-3.483,"A":5.055,"A_rank":27,"passes_gate":false,"rank":38,"score":2.816,"p_top10":0.05,"band":"near-tie","rank_p10":15.6,"rank_p90":51.0,"boot_median_rank":36.0,"p_balls":267.145,"n_balls":978.855,"matches":79,"p_sr":161.716,"n_sr":144.453,"p_avg":33.707,"n_avg":41.365},{"id":2639.0,"name":"Marcus Stoinis","p_rv":-19.237,"p_wb":107.144,"normal":11.106,"A":-5.443,"A_rank":48,"passes_gate":false,"rank":39,"score":2.388,"p_top10":0.01,"band":"near-tie","rank_p10":20.0,"rank_p90":54.0,"boot_median_rank":37.0,"p_balls":174.942,"n_balls":1038.058,"matches":84,"p_sr":147.436,"n_sr":152.696,"p_avg":16.992,"n_avg":33.854},{"id":6448.0,"name":"Ibrahim Zadran","p_rv":8.307,"p_wb":102.722,"normal":-0.001,"A":2.38,"A_rank":34,"passes_gate":false,"rank":40,"score":2.355,"p_top10":0.007,"band":"near-tie","rank_p10":25.0,"rank_p90":50.1,"boot_median_rank":38.0,"p_balls":159.481,"n_balls":955.519,"matches":45,"p_sr":109.615,"n_sr":118.803,"p_avg":39.637,"n_avg":35.935},{"id":3297.0,"name":"Shimron Hetmyer","p_rv":-4.584,"p_wb":138.941,"normal":4.871,"A":-1.19,"A_rank":41,"passes_gate":false,"rank":41,"score":1.952,"p_top10":0.01,"band":"near-tie","rank_p10":22.0,"rank_p90":50.0,"boot_median_rank":39.0,"p_balls":200.788,"n_balls":998.212,"matches":91,"p_sr":158.891,"n_sr":148.662,"p_avg":22.582,"n_avg":25.642},{"id":3639.0,"name":"Brandon King","p_rv":1.642,"p_wb":98.993,"normal":0.347,"A":0.476,"A_rank":38,"passes_gate":false,"rank":42,"score":0.719,"p_top10":0.007,"band":"near-tie","rank_p10":25.9,"rank_p90":52.0,"boot_median_rank":41.0,"p_balls":150.394,"n_balls":976.606,"matches":58,"p_sr":143.513,"n_sr":129.854,"p_avg":24.793,"n_avg":27.393},{"id":4246.0,"name":"Nitish Rana","p_rv":-2.578,"p_wb":103.789,"normal":0.11,"A":-0.736,"A_rank":39,"passes_gate":false,"rank":43,"score":-0.651,"p_top10":0.01,"band":"near-tie","rank_p10":22.0,"rank_p90":55.0,"boot_median_rank":42.0,"p_balls":163.354,"n_balls":697.646,"matches":50,"p_sr":145.67,"n_sr":146.212,"p_avg":30.769,"n_avg":26.656},{"id":3605.0,"name":"Aiden Markram","p_rv":-8.465,"p_wb":168.204,"normal":2.17,"A":-2.042,"A_rank":45,"passes_gate":false,"rank":44,"score":-0.727,"p_top10":0.03,"band":"near-tie","rank_p10":26.0,"rank_p90":55.0,"boot_median_rank":42.5,"p_balls":239.584,"n_balls":1375.416,"matches":88,"p_sr":139.65,"n_sr":142.896,"p_avg":24.021,"n_avg":32.718},{"id":6725.0,"name":"Sherfane Rutherford","p_rv":-15.733,"p_wb":171.372,"normal":5.041,"A":-3.767,"A_rank":47,"passes_gate":false,"rank":45,"score":-0.743,"p_top10":0.0,"band":"near-tie","rank_p10":28.0,"rank_p90":54.0,"boot_median_rank":43.0,"p_balls":212.405,"n_balls":582.595,"matches":54,"p_sr":133.799,"n_sr":152.045,"p_avg":28.193,"n_avg":26.115},{"id":3926.0,"name":"Rahul Tewatia","p_rv":3.54,"p_wb":87.082,"normal":-3.85,"A":1.062,"A_rank":36,"passes_gate":false,"rank":46,"score":-1.805,"p_top10":0.0,"band":"near-tie","rank_p10":29.0,"rank_p90":54.0,"boot_median_rank":42.0,"p_balls":150.903,"n_balls":365.097,"matches":57,"p_sr":183.695,"n_sr":134.977,"p_avg":35.384,"n_avg":19.582},{"id":88.0,"name":"Faf du Plessis","p_rv":-26.255,"p_wb":119.958,"normal":7.481,"A":-7.168,"A_rank":49,"passes_gate":false,"rank":47,"score":-2.041,"p_top10":0.0,"band":"near-tie","rank_p10":28.0,"rank_p90":52.1,"boot_median_rank":41.0,"p_balls":180.789,"n_balls":1087.211,"matches":53,"p_sr":128.48,"n_sr":147.416,"p_avg":22.81,"n_avg":39.266},{"id":7260.0,"name":"Dhruv Jurel","p_rv":-4.951,"p_wb":175.1,"normal":-2.257,"A":-1.175,"A_rank":40,"passes_gate":false,"rank":48,"score":-2.492,"p_top10":0.0,"band":"near-tie","rank_p10":29.9,"rank_p90":56.0,"boot_median_rank":45.0,"p_balls":225.594,"n_balls":569.406,"matches":53,"p_sr":140.753,"n_sr":155.859,"p_avg":27.66,"n_avg":31.117},{"id":4007.0,"name":"Ryan Rickelton","p_rv":-54.864,"p_wb":159.7,"normal":17.726,"A":-13.513,"A_rank":58,"passes_gate":false,"rank":49,"score":-2.575,"p_top10":0.02,"band":"near-tie","rank_p10":18.9,"rank_p90":57.0,"boot_median_rank":41.5,"p_balls":182.813,"n_balls":635.187,"matches":42,"p_sr":131.536,"n_sr":166.335,"p_avg":26.336,"n_avg":36.597},{"id":3916.0,"name":"Jitesh Sharma","p_rv":-13.395,"p_wb":116.307,"normal":-0.192,"A":-3.694,"A_rank":46,"passes_gate":false,"rank":50,"score":-3.788,"p_top10":0.0,"band":"near-tie","rank_p10":29.0,"rank_p90":55.1,"boot_median_rank":46.0,"p_balls":165.624,"n_balls":715.376,"matches":70,"p_sr":152.43,"n_sr":158.314,"p_avg":20.272,"n_avg":26.619},{"id":3125.0,"name":"Nicholas Pooran","p_rv":-55.461,"p_wb":203.575,"normal":14.758,"A":-12.328,"A_rank":55,"passes_gate":false,"rank":51,"score":-4.093,"p_top10":0.003,"band":"near-tie","rank_p10":26.0,"rank_p90":57.0,"boot_median_rank":47.0,"p_balls":328.689,"n_balls":1569.311,"matches":111,"p_sr":138.041,"n_sr":161.553,"p_avg":24.527,"n_avg":34.969},{"id":3330.0,"name":"Hardik Pandya","p_rv":-38.998,"p_wb":169.239,"normal":3.315,"A":-9.385,"A_rank":51,"passes_gate":false,"rank":52,"score":-7.325,"p_top10":0.0,"band":"near-tie","rank_p10":40.0,"rank_p90":56.0,"boot_median_rank":49.0,"p_balls":307.633,"n_balls":1577.367,"matches":113,"p_sr":137.013,"n_sr":142.104,"p_avg":27.154,"n_avg":30.927},{"id":4895.0,"name":"Charith Asalanka","p_rv":-32.734,"p_wb":95.268,"normal":0.57,"A":-9.584,"A_rank":52,"passes_gate":false,"rank":53,"score":-9.068,"p_top10":0.0,"band":"near-tie","rank_p10":40.0,"rank_p90":57.0,"boot_median_rank":52.0,"p_balls":155.431,"n_balls":525.569,"matches":49,"p_sr":107.808,"n_sr":133.081,"p_avg":11.792,"n_avg":22.716},{"id":2671.0,"name":"Liton Das","p_rv":-26.363,"p_wb":97.105,"normal":-4.486,"A":-7.677,"A_rank":50,"passes_gate":false,"rank":54,"score":-10.826,"p_top10":0.0,"band":"near-tie","rank_p10":41.0,"rank_p90":59.0,"boot_median_rank":53.0,"p_balls":153.226,"n_balls":844.774,"matches":56,"p_sr":118.724,"n_sr":129.038,"p_avg":15.213,"n_avg":26.56},{"id":2876.0,"name":"Axar Patel","p_rv":-39.555,"p_wb":151.881,"normal":-3.178,"A":-9.934,"A_rank":53,"passes_gate":false,"rank":55,"score":-11.819,"p_top10":0.0,"band":"near-tie","rank_p10":44.0,"rank_p90":58.0,"boot_median_rank":54.0,"p_balls":216.148,"n_balls":1051.852,"matches":103,"p_sr":138.026,"n_sr":138.2,"p_avg":16.539,"n_avg":25.52},{"id":167.0,"name":"Ajinkya Rahane","p_rv":-49.525,"p_wb":147.001,"normal":0.453,"A":-12.592,"A_rank":57,"passes_gate":false,"rank":56,"score":-12.189,"p_top10":0.003,"band":"near-tie","rank_p10":33.0,"rank_p90":59.1,"boot_median_rank":51.0,"p_balls":177.475,"n_balls":828.525,"matches":54,"p_sr":117.459,"n_sr":142.728,"p_avg":19.619,"n_avg":29.289},{"id":2101.0,"name":"Quinton de Kock","p_rv":-42.096,"p_wb":108.54,"normal":-1.408,"A":-11.863,"A_rank":54,"passes_gate":false,"rank":57,"score":-12.723,"p_top10":0.01,"band":"near-tie","rank_p10":33.0,"rank_p90":60.0,"boot_median_rank":54.0,"p_balls":160.258,"n_balls":1086.742,"matches":64,"p_sr":143.229,"n_sr":151.505,"p_avg":19.701,"n_avg":34.054},{"id":126.0,"name":"Rohit Sharma","p_rv":-60.517,"p_wb":181.181,"normal":-2.203,"A":-14.157,"A_rank":59,"passes_gate":false,"rank":58,"score":-15.312,"p_top10":0.003,"band":"near-tie","rank_p10":41.0,"rank_p90":60.0,"boot_median_rank":56.0,"p_balls":258.374,"n_balls":1326.626,"matches":88,"p_sr":139.016,"n_sr":144.111,"p_avg":23.332,"n_avg":28.279},{"id":6674.0,"name":"Rahmanullah Gurbaz","p_rv":-44.832,"p_wb":112.024,"normal":-4.742,"A":-12.512,"A_rank":56,"passes_gate":false,"rank":59,"score":-15.659,"p_top10":0.0,"band":"near-tie","rank_p10":45.0,"rank_p90":60.0,"boot_median_rank":56.0,"p_balls":163.099,"n_balls":938.901,"matches":66,"p_sr":124.211,"n_sr":131.687,"p_avg":13.6,"n_avg":24.194},{"id":1941.0,"name":"Devon Conway","p_rv":-74.97,"p_wb":102.429,"normal":-0.913,"A":-21.498,"A_rank":60,"passes_gate":false,"rank":60,"score":-21.92,"p_top10":0.0,"band":"near-tie","rank_p10":52.0,"rank_p90":60.0,"boot_median_rank":58.0,"p_balls":164.497,"n_balls":1296.503,"matches":60,"p_sr":107.095,"n_sr":134.58,"p_avg":18.97,"n_avg":39.023}],"detail":{"Shreyas Iyer":{"pvn":{"role":"bat","rank":1,"name":"Shreyas Iyer","pressure_balls":277,"pressure_sr":165.2,"pressure_avg":52.2,"pressure_boundary%":22.7,"pressure_dot%":28.0,"pressure_rv_per100":43.1,"normal_balls":1487,"normal_sr":151.9,"normal_avg":34.7,"normal_boundary%":19.9,"normal_dot%":29.5,"normal_rv_per100":15.0,"gap_rv_per100":28.1,"pressure_rv_lo":15.2,"pressure_rv_hi":63.7,"normal_rv_lo":2.3,"normal_rv_hi":26.6,"gap_lo":0.8,"gap_hi":50.1,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+43.1 runs above an average player per 100 pressure balls (90% range +15.2 to +63.7) over 277 balls; SR 165.2 under pressure vs 151.9 normally; top 10 in 86% of resamples.","seasons":{"2022":-33.7,"2023":null,"2024":null,"2025":64.3,"2026":68.7},"split":[{"competition":"IPL","situation":"pressure","balls":191,"rv_per100":55.1},{"competition":"IPL","situation":"normal","balls":960,"rv_per100":14.1},{"competition":"T20I","situation":"pressure","balls":87,"rv_per100":16.5},{"competition":"T20I","situation":"normal","balls":527,"rv_per100":16.4}],"model":{"rank_models_A":1,"rank_models_B":1,"rank_second_16fit":2}},"Abhishek Sharma":{"pvn":{"role":"bat","rank":2,"name":"Abhishek Sharma","pressure_balls":422,"pressure_sr":166.9,"pressure_avg":31.3,"pressure_boundary%":27.3,"pressure_dot%":38.0,"pressure_rv_per100":22.1,"normal_balls":1838,"normal_sr":191.5,"normal_avg":35.0,"normal_boundary%":31.0,"normal_dot%":33.7,"normal_rv_per100":45.5,"gap_rv_per100":-23.4,"pressure_rv_lo":-13.2,"pressure_rv_hi":54.4,"normal_rv_lo":31.0,"normal_rv_hi":59.7,"gap_lo":-58.8,"gap_hi":8.9,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+22.1 runs above an average player per 100 pressure balls (90% range -13.2 to +54.4) over 422 balls; SR 166.9 under pressure vs 191.5 normally; top 10 in 50% of resamples.","seasons":{"2022":85.6,"2023":-117.4,"2024":-7.4,"2025":35.8,"2026":40.2},"split":[{"competition":"IPL","situation":"pressure","balls":263,"rv_per100":24.9},{"competition":"IPL","situation":"normal","balls":953,"rv_per100":16.9},{"competition":"T20I","situation":"pressure","balls":155,"rv_per100":17.6},{"competition":"T20I","situation":"normal","balls":824,"rv_per100":77.6}],"model":{"rank_models_A":13,"rank_models_B":2,"rank_second_16fit":1}},"Virat Kohli":{"pvn":{"role":"bat","rank":3,"name":"Virat Kohli","pressure_balls":374,"pressure_sr":151.2,"pressure_avg":71.3,"pressure_boundary%":21.6,"pressure_dot%":31.8,"pressure_rv_per100":38.5,"normal_balls":2070,"normal_sr":144.3,"normal_avg":46.7,"normal_boundary%":18.6,"normal_dot%":29.2,"normal_rv_per100":3.2,"gap_rv_per100":35.3,"pressure_rv_lo":22.6,"pressure_rv_hi":56.3,"normal_rv_lo":-7.4,"normal_rv_hi":11.4,"gap_lo":17.5,"gap_hi":56.0,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+38.5 runs above an average player per 100 pressure balls (90% range +22.6 to +56.3) over 374 balls; SR 151.2 under pressure vs 144.3 normally; top 10 in 82% of resamples.","seasons":{"2022":-11.3,"2023":45.2,"2024":45.4,"2025":23.5,"2026":82.7},"split":[{"competition":"IPL","situation":"pressure","balls":311,"rv_per100":46.1},{"competition":"IPL","situation":"normal","balls":1775,"rv_per100":3.1},{"competition":"T20I","situation":"pressure","balls":64,"rv_per100":2.1},{"competition":"T20I","situation":"normal","balls":295,"rv_per100":3.7}],"model":{"rank_models_A":4,"rank_models_B":3,"rank_second_16fit":5}},"Namboori Tilak Varma":{"pvn":{"role":"bat","rank":4,"name":"Namboori Tilak Varma","pressure_balls":506,"pressure_sr":150.5,"pressure_avg":39.2,"pressure_boundary%":19.9,"pressure_dot%":30.6,"pressure_rv_per100":26.9,"normal_balls":1949,"normal_sr":141.7,"normal_avg":44.2,"normal_boundary%":17.4,"normal_dot%":31.2,"normal_rv_per100":14.3,"gap_rv_per100":12.6,"pressure_rv_lo":10.7,"pressure_rv_hi":40.7,"normal_rv_lo":3.0,"normal_rv_hi":24.9,"gap_lo":-7.2,"gap_hi":30.7,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+26.9 runs above an average player per 100 pressure balls (90% range +10.7 to +40.7) over 506 balls; SR 150.5 under pressure vs 141.7 normally; top 10 in 62% of resamples.","seasons":{"2022":4.7,"2023":15.1,"2024":8.0,"2025":45.2,"2026":37.5},"split":[{"competition":"IPL","situation":"pressure","balls":247,"rv_per100":25.4},{"competition":"IPL","situation":"normal","balls":1019,"rv_per100":11.3},{"competition":"T20I","situation":"pressure","balls":258,"rv_per100":29.3},{"competition":"T20I","situation":"normal","balls":835,"rv_per100":20.4}],"model":{"rank_models_A":6,"rank_models_B":6,"rank_second_16fit":9}},"Sai Sudharsan":{"pvn":{"role":"bat","rank":5,"name":"Sai Sudharsan","pressure_balls":303,"pressure_sr":152.0,"pressure_avg":59.3,"pressure_boundary%":23.6,"pressure_dot%":31.4,"pressure_rv_per100":33.1,"normal_balls":1330,"normal_sr":146.8,"normal_avg":47.4,"normal_boundary%":19.1,"normal_dot%":28.6,"normal_rv_per100":11.0,"gap_rv_per100":22.1,"pressure_rv_lo":15.2,"pressure_rv_hi":48.9,"normal_rv_lo":1.0,"normal_rv_hi":19.9,"gap_lo":0.8,"gap_hi":42.5,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+33.1 runs above an average player per 100 pressure balls (90% range +15.2 to +48.9) over 303 balls; SR 152.0 under pressure vs 146.8 normally; top 10 in 66% of resamples.","seasons":{"2022":14.7,"2023":60.5,"2024":11.0,"2025":47.2,"2026":29.4},"split":[{"competition":"IPL","situation":"pressure","balls":304,"rv_per100":33.1},{"competition":"IPL","situation":"normal","balls":1330,"rv_per100":11.0}],"model":{"rank_models_A":2,"rank_models_B":8,"rank_second_16fit":7}},"Pathum Nissanka":{"pvn":{"role":"bat","rank":6,"name":"Pathum Nissanka","pressure_balls":352,"pressure_sr":144.5,"pressure_avg":29.2,"pressure_boundary%":19.0,"pressure_dot%":35.1,"pressure_rv_per100":21.4,"normal_balls":1175,"normal_sr":134.0,"normal_avg":33.1,"normal_boundary%":18.7,"normal_dot%":38.5,"normal_rv_per100":11.0,"gap_rv_per100":10.4,"pressure_rv_lo":-3.4,"pressure_rv_hi":44.7,"normal_rv_lo":-2.1,"normal_rv_hi":22.4,"gap_lo":-16.7,"gap_hi":38.7,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+21.4 runs above an average player per 100 pressure balls (90% range -3.4 to +44.7) over 352 balls; SR 144.5 under pressure vs 134.0 normally; top 10 in 49% of resamples.","seasons":{"2022":-18.7,"2023":null,"2024":23.8,"2025":22.6,"2026":65.5},"split":[{"competition":"IPL","situation":"pressure","balls":74,"rv_per100":64.0},{"competition":"IPL","situation":"normal","balls":101,"rv_per100":-27.4},{"competition":"T20I","situation":"pressure","balls":279,"rv_per100":10.1},{"competition":"T20I","situation":"normal","balls":1074,"rv_per100":14.6}],"model":{"rank_models_A":5,"rank_models_B":10,"rank_second_16fit":4}},"Cameron Green":{"pvn":{"role":"bat","rank":7,"name":"Cameron Green","pressure_balls":210,"pressure_sr":159.1,"pressure_avg":35.8,"pressure_boundary%":22.3,"pressure_dot%":35.6,"pressure_rv_per100":39.3,"normal_balls":855,"normal_sr":151.3,"normal_avg":42.2,"normal_boundary%":19.4,"normal_dot%":29.3,"normal_rv_per100":14.0,"gap_rv_per100":25.3,"pressure_rv_lo":9.6,"pressure_rv_hi":67.8,"normal_rv_lo":-2.3,"normal_rv_hi":28.4,"gap_lo":-7.6,"gap_hi":59.8,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+39.3 runs above an average player per 100 pressure balls (90% range +9.6 to +67.8) over 210 balls; SR 159.1 under pressure vs 151.3 normally; top 10 in 52% of resamples.","seasons":{"2022":88.0,"2023":39.9,"2024":7.0,"2025":61.0,"2026":19.7},"split":[{"competition":"IPL","situation":"pressure","balls":92,"rv_per100":20.6},{"competition":"IPL","situation":"normal","balls":587,"rv_per100":8.1},{"competition":"T20I","situation":"pressure","balls":118,"rv_per100":53.9},{"competition":"T20I","situation":"normal","balls":269,"rv_per100":26.8}],"model":{"rank_models_A":7,"rank_models_B":9,"rank_second_16fit":6}},"Yashasvi Jaiswal":{"pvn":{"role":"bat","rank":8,"name":"Yashasvi Jaiswal","pressure_balls":351,"pressure_sr":172.3,"pressure_avg":42.7,"pressure_boundary%":29.2,"pressure_dot%":36.4,"pressure_rv_per100":35.4,"normal_balls":1470,"normal_sr":150.6,"normal_avg":34.2,"normal_boundary%":24.4,"normal_dot%":40.2,"normal_rv_per100":4.0,"gap_rv_per100":31.4,"pressure_rv_lo":7.4,"pressure_rv_hi":60.4,"normal_rv_lo":-10.4,"normal_rv_hi":16.7,"gap_lo":0.7,"gap_hi":60.4,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+35.4 runs above an average player per 100 pressure balls (90% range +7.4 to +60.4) over 351 balls; SR 172.3 under pressure vs 150.6 normally; top 10 in 50% of resamples.","seasons":{"2022":39.8,"2023":27.0,"2024":10.0,"2025":74.5,"2026":39.2},"split":[{"competition":"IPL","situation":"pressure","balls":313,"rv_per100":26.5},{"competition":"IPL","situation":"normal","balls":1140,"rv_per100":-2.1},{"competition":"T20I","situation":"pressure","balls":38,"rv_per100":108.1},{"competition":"T20I","situation":"normal","balls":331,"rv_per100":25.2}],"model":{"rank_models_A":12,"rank_models_B":5,"rank_second_16fit":11}},"Mitchell Marsh":{"pvn":{"role":"bat","rank":9,"name":"Mitchell Marsh","pressure_balls":386,"pressure_sr":143.4,"pressure_avg":33.4,"pressure_boundary%":21.0,"pressure_dot%":42.0,"pressure_rv_per100":20.2,"normal_balls":1272,"normal_sr":159.9,"normal_avg":36.7,"normal_boundary%":24.2,"normal_dot%":36.0,"normal_rv_per100":16.5,"gap_rv_per100":3.7,"pressure_rv_lo":-6.6,"pressure_rv_hi":41.8,"normal_rv_lo":1.8,"normal_rv_hi":28.2,"gap_lo":-24.6,"gap_hi":28.7,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+20.2 runs above an average player per 100 pressure balls (90% range -6.6 to +41.8) over 386 balls; SR 143.4 under pressure vs 159.9 normally; top 10 in 47% of resamples.","seasons":{"2022":-36.7,"2023":1.4,"2024":40.8,"2025":26.7,"2026":30.5},"split":[{"competition":"IPL","situation":"pressure","balls":212,"rv_per100":21.9},{"competition":"IPL","situation":"normal","balls":784,"rv_per100":1.3},{"competition":"T20I","situation":"pressure","balls":175,"rv_per100":18.1},{"competition":"T20I","situation":"normal","balls":488,"rv_per100":40.9}],"model":{"rank_models_A":19,"rank_models_B":7,"rank_second_16fit":8}},"Daryl Mitchell":{"pvn":{"role":"bat","rank":10,"name":"Daryl Mitchell","pressure_balls":154,"pressure_sr":166.4,"pressure_avg":44.7,"pressure_boundary%":19.5,"pressure_dot%":19.9,"pressure_rv_per100":48.2,"normal_balls":951,"normal_sr":144.6,"normal_avg":27.4,"normal_boundary%":16.4,"normal_dot%":26.9,"normal_rv_per100":1.3,"gap_rv_per100":46.9,"pressure_rv_lo":16.9,"pressure_rv_hi":76.0,"normal_rv_lo":-15.2,"normal_rv_hi":16.2,"gap_lo":12.7,"gap_hi":81.2,"pressure_econ":null,"pressure_wkts":null,"pressure_balls_per_wkt":null,"normal_econ":null,"normal_wkts":null,"normal_balls_per_wkt":null},"why":"+48.2 runs above an average player per 100 pressure balls (90% range +16.9 to +76.0) over 154 balls; SR 166.4 under pressure vs 144.6 normally; top 10 in 41% of resamples.","seasons":{"2022":42.6,"2023":-12.3,"2024":90.8,"2025":-25.7,"2026":153.1},"split":[{"competition":"IPL","situation":"pressure","balls":18,"rv_per100":62.0},{"competition":"IPL","situation":"normal","balls":249,"rv_per100":-20.9},{"competition":"T20I","situation":"pressure","balls":136,"rv_per100":46.3},{"competition":"T20I","situation":"normal","balls":703,"rv_per100":9.1}],"model":{"rank_models_A":9,"rank_models_B":11,"rank_second_16fit":10}}},"sens":[{"variant":"PI>=1.25","overlap_with_base_top10":5},{"variant":"PI>=2.0","overlap_with_base_top10":2},{"variant":"no recency weights","overlap_with_base_top10":7},{"variant":"no opposition weights","overlap_with_base_top10":9},{"variant":"no knockout factor","overlap_with_base_top10":8},{"variant":"weaker pull to own normal (KC / 3)","overlap_with_base_top10":9},{"variant":"stronger pull to own normal (KC x 3)","overlap_with_base_top10":10},{"variant":"pace/spin baseline off","overlap_with_base_top10":10},{"variant":"no gate","overlap_with_base_top10":6},{"variant":"no 3-season rule","overlap_with_base_top10":9},{"variant":"hard pressure cut (no ramp)","overlap_with_base_top10":8},{"variant":"forecast-best KC (bat 250 / bowl 2000)","overlap_with_base_top10":10},{"variant":"wides cost 1.0 run (no calibration)","overlap_with_base_top10":10},{"variant":"wides cost 1.5 runs","overlap_with_base_top10":10},{"variant":"soft gate (half-width 5% of pool)","overlap_with_base_top10":9},{"variant":"gate = top 15% of pool","overlap_with_base_top10":8},{"variant":"gate = top 25% of pool","overlap_with_base_top10":9},{"variant":"gate = top 30% of pool","overlap_with_base_top10":9}],"kc_curve":[{"k":0,"gain":-11.9,"se":2.0},{"k":50,"gain":-1.33,"se":1.02},{"k":100,"gain":1.92,"se":0.62},{"k":150,"gain":3.23,"se":0.38},{"k":200,"gain":3.79,"se":0.21},{"k":250,"gain":4.03,"se":0.09},{"k":300,"gain":4.11,"se":0.0},{"k":400,"gain":4.06,"se":0.13},{"k":500,"gain":3.91,"se":0.22},{"k":700,"gain":3.58,"se":0.34},{"k":1000,"gain":3.17,"se":0.44},{"k":1500,"gain":2.73,"se":0.53},{"k":2000,"gain":2.45,"se":0.57}],"kc_normal_only":1.35,"repeat":{"rise":0.065,"output":0.197,"normal":0.257,"share":0.152},"forward":[{"forecast (built on earlier seasons only)":"final rating","mean_spearman_over_3_origins":0.228,"permutation_p":0.022,"players_per_origin":"20/32/32"},{"forecast (built on earlier seasons only)":"pressure output only","mean_spearman_over_3_origins":0.127,"permutation_p":0.139,"players_per_origin":"20/32/32"},{"forecast (built on earlier seasons only)":"normal level only","mean_spearman_over_3_origins":0.223,"permutation_p":0.026,"players_per_origin":"20/32/32"}],"pool":60},"bowl":{"players":[{"id":2933,"name":"Jasprit Bumrah","p_rv":58.352,"p_wb":246.378,"normal":28.526,"A":12.488,"A_rank":6,"passes_gate":true,"rank":1,"score":26.343,"p_top10":0.697,"band":"likely","rank_p10":1.0,"rank_p90":15.0,"boot_median_rank":3.0,"p_balls":323.215,"n_balls":1330.785,"matches":72,"p_econ":7.533,"n_econ":7.085,"p_sr":26.31,"n_sr":19.089},{"id":4373,"name":"Mustafizur Rahman","p_rv":54.065,"p_wb":163.636,"normal":21.216,"A":14.06,"A_rank":4,"passes_gate":true,"rank":2,"score":25.389,"p_top10":0.773,"band":"firm","rank_p10":1.0,"rank_p90":15.0,"boot_median_rank":3.0,"p_balls":275.746,"n_balls":1258.254,"matches":68,"p_econ":8.172,"n_econ":7.71,"p_sr":14.547,"n_sr":20.955},{"id":781,"name":"Sunil Narine","p_rv":52.244,"p_wb":161.05,"normal":18.959,"A":13.678,"A_rank":5,"passes_gate":true,"rank":3,"score":23.668,"p_top10":0.677,"band":"likely","rank_p10":1.0,"rank_p90":16.1,"boot_median_rank":4.5,"p_balls":229.333,"n_balls":1276.667,"matches":66,"p_econ":6.182,"n_econ":6.964,"p_sr":20.673,"n_sr":24.131},{"id":830,"name":"Josh Hazlewood","p_rv":69.164,"p_wb":202.063,"normal":10.0,"A":16.352,"A_rank":1,"passes_gate":true,"rank":4,"score":19.751,"p_top10":0.77,"band":"firm","rank_p10":2.0,"rank_p90":18.0,"boot_median_rank":6.0,"p_balls":289.872,"n_balls":1078.128,"matches":59,"p_econ":7.734,"n_econ":8.415,"p_sr":11.104,"n_sr":17.141},{"id":4722,"name":"Rashid Khan","p_rv":67.188,"p_wb":212.603,"normal":10.774,"A":15.499,"A_rank":2,"passes_gate":true,"rank":5,"score":19.413,"p_top10":0.817,"band":"firm","rank_p10":3.0,"rank_p90":18.1,"boot_median_rank":6.0,"p_balls":343.342,"n_balls":2331.658,"matches":118,"p_econ":6.674,"n_econ":7.488,"p_sr":13.657,"n_sr":18.825},{"id":6669,"name":"Mohsin Khan","p_rv":26.937,"p_wb":107.896,"normal":13.433,"A":8.193,"A_rank":11,"passes_gate":true,"rank":6,"score":16.483,"p_top10":0.277,"band":"near-tie","rank_p10":3.0,"rank_p90":30.0,"boot_median_rank":15.0,"p_balls":163.671,"n_balls":490.329,"matches":30,"p_econ":7.912,"n_econ":8.562,"p_sr":16.734,"n_sr":17.376},{"id":2490,"name":"Mohammad Nawaz","p_rv":44.046,"p_wb":134.859,"normal":7.578,"A":12.381,"A_rank":7,"passes_gate":true,"rank":7,"score":15.357,"p_top10":0.627,"band":"likely","rank_p10":2.9,"rank_p90":28.0,"boot_median_rank":9.0,"p_balls":217.336,"n_balls":786.664,"matches":52,"p_econ":6.523,"n_econ":7.303,"p_sr":12.292,"n_sr":16.281},{"id":8661,"name":"Matheesha Pathirana","p_rv":27.766,"p_wb":120.742,"normal":11.257,"A":8.127,"A_rank":12,"passes_gate":true,"rank":8,"score":14.626,"p_top10":0.333,"band":"near-tie","rank_p10":4.0,"rank_p90":29.0,"boot_median_rank":17.0,"p_balls":175.246,"n_balls":855.754,"matches":49,"p_econ":8.698,"n_econ":8.735,"p_sr":10.927,"n_sr":14.764},{"id":4219,"name":"Krunal Pandya","p_rv":54.247,"p_wb":145.027,"normal":3.583,"A":14.824,"A_rank":3,"passes_gate":true,"rank":9,"score":14.605,"p_top10":0.63,"band":"likely","rank_p10":4.0,"rank_p90":24.0,"boot_median_rank":9.0,"p_balls":215.35,"n_balls":1011.65,"matches":64,"p_econ":6.21,"n_econ":8.109,"p_sr":12.832,"n_sr":26.471},{"id":4692,"name":"Lockie Ferguson","p_rv":33.697,"p_wb":100.0,"normal":5.461,"A":10.501,"A_rank":9,"passes_gate":true,"rank":10,"score":12.52,"p_top10":0.363,"band":"near-tie","rank_p10":5.0,"rank_p90":34.1,"boot_median_rank":15.0,"p_balls":153.634,"n_balls":922.366,"matches":53,"p_econ":7.666,"n_econ":9.099,"p_sr":13.542,"n_sr":19.355},{"id":3628,"name":"Kagiso Rabada","p_rv":55.366,"p_wb":234.543,"normal":1.789,"A":12.157,"A_rank":8,"passes_gate":true,"rank":11,"score":11.362,"p_top10":0.48,"band":"near-tie","rank_p10":4.0,"rank_p90":36.0,"boot_median_rank":11.0,"p_balls":300.7,"n_balls":1220.3,"matches":67,"p_econ":9.164,"n_econ":9.323,"p_sr":16.556,"n_sr":18.258},{"id":2633,"name":"Jason Holder","p_rv":45.048,"p_wb":214.704,"normal":-0.591,"A":10.341,"A_rank":10,"passes_gate":true,"rank":12,"score":8.408,"p_top10":0.367,"band":"near-tie","rank_p10":7.0,"rank_p90":36.0,"boot_median_rank":12.0,"p_balls":347.829,"n_balls":1568.171,"matches":87,"p_econ":8.271,"n_econ":9.149,"p_sr":15.623,"n_sr":18.291},{"id":5379,"name":"Mark Adair","p_rv":22.16,"p_wb":90.043,"normal":-0.802,"A":7.127,"A_rank":13,"passes_gate":true,"rank":13,"score":5.064,"p_top10":0.07,"band":"near-tie","rank_p10":11.0,"rank_p90":43.0,"boot_median_rank":27.0,"p_balls":174.112,"n_balls":602.888,"matches":36,"p_econ":7.6,"n_econ":8.67,"p_sr":11.301,"n_sr":17.428},{"id":6523,"name":"Blessing Muzarabani","p_rv":7.531,"p_wb":124.549,"normal":22.786,"A":2.18,"A_rank":29,"passes_gate":false,"rank":14,"score":17.875,"p_top10":0.237,"band":"near-tie","rank_p10":2.0,"rank_p90":24.0,"boot_median_rank":15.0,"p_balls":172.098,"n_balls":647.902,"matches":37,"p_econ":8.587,"n_econ":7.271,"p_sr":20.298,"n_sr":17.268},{"id":7920,"name":"Nathan Ellis","p_rv":11.321,"p_wb":127.714,"normal":12.511,"A":3.247,"A_rank":23,"passes_gate":false,"rank":15,"score":11.422,"p_top10":0.163,"band":"near-tie","rank_p10":7.0,"rank_p90":32.1,"boot_median_rank":19.0,"p_balls":183.401,"n_balls":692.599,"matches":39,"p_econ":9.101,"n_econ":8.052,"p_sr":16.982,"n_sr":16.032},{"id":4900,"name":"Wanindu Hasaranga","p_rv":23.187,"p_wb":179.422,"normal":6.365,"A":5.792,"A_rank":16,"passes_gate":false,"rank":16,"score":8.819,"p_top10":0.167,"band":"near-tie","rank_p10":9.0,"rank_p90":34.1,"boot_median_rank":22.0,"p_balls":291.4,"n_balls":1658.6,"matches":87,"p_econ":8.308,"n_econ":7.709,"p_sr":11.693,"n_sr":15.936},{"id":5837,"name":"Mahedi Hasan","p_rv":-3.655,"p_wb":83.981,"normal":11.972,"A":-1.199,"A_rank":42,"passes_gate":false,"rank":17,"score":8.401,"p_top10":0.053,"band":"near-tie","rank_p10":15.0,"rank_p90":44.0,"boot_median_rank":22.0,"p_balls":151.396,"n_balls":732.604,"matches":39,"p_econ":8.156,"n_econ":6.822,"p_sr":21.561,"n_sr":17.452},{"id":6256,"name":"Varun Chakravarthy","p_rv":8.019,"p_wb":232.043,"normal":12.065,"A":1.77,"A_rank":30,"passes_gate":false,"rank":18,"score":8.31,"p_top10":0.073,"band":"near-tie","rank_p10":15.0,"rank_p90":38.0,"boot_median_rank":23.0,"p_balls":311.561,"n_balls":1792.439,"matches":94,"p_econ":7.76,"n_econ":8.01,"p_sr":17.712,"n_sr":15.398},{"id":4874,"name":"Richard Ngarava","p_rv":7.536,"p_wb":109.508,"normal":8.022,"A":2.281,"A_rank":28,"passes_gate":false,"rank":19,"score":7.717,"p_top10":0.13,"band":"near-tie","rank_p10":9.0,"rank_p90":39.0,"boot_median_rank":23.0,"p_balls":154.793,"n_balls":691.207,"matches":39,"p_econ":8.798,"n_econ":7.89,"p_sr":17.612,"n_sr":21.459},{"id":2320,"name":"Trent Boult","p_rv":24.012,"p_wb":229.247,"normal":4.924,"A":5.334,"A_rank":19,"passes_gate":false,"rank":20,"score":7.328,"p_top10":0.207,"band":"near-tie","rank_p10":8.0,"rank_p90":40.0,"boot_median_rank":23.0,"p_balls":341.423,"n_balls":1159.577,"matches":67,"p_econ":8.297,"n_econ":8.413,"p_sr":23.087,"n_sr":20.629},{"id":19316,"name":"Maheesh Theekshana","p_rv":20.297,"p_wb":215.977,"normal":4.805,"A":4.646,"A_rank":20,"passes_gate":false,"rank":21,"score":6.728,"p_top10":0.1,"band":"near-tie","rank_p10":10.9,"rank_p90":41.0,"boot_median_rank":26.0,"p_balls":327.075,"n_balls":1840.925,"matches":94,"p_econ":6.636,"n_econ":7.862,"p_sr":37.565,"n_sr":22.646},{"id":1813,"name":"Deepak Chahar","p_rv":26.832,"p_wb":160.532,"normal":1.11,"A":7.034,"A_rank":14,"passes_gate":false,"rank":22,"score":6.549,"p_top10":0.243,"band":"near-tie","rank_p10":7.0,"rank_p90":44.0,"boot_median_rank":24.0,"p_balls":208.006,"n_balls":636.994,"matches":44,"p_econ":9.367,"n_econ":8.775,"p_sr":20.551,"n_sr":19.374},{"id":6450,"name":"Mujeeb Ur Rahman","p_rv":-2.368,"p_wb":114.685,"normal":9.799,"A":-0.706,"A_rank":40,"passes_gate":false,"rank":23,"score":6.518,"p_top10":0.03,"band":"near-tie","rank_p10":16.0,"rank_p90":46.0,"boot_median_rank":25.5,"p_balls":191.52,"n_balls":604.48,"matches":36,"p_econ":7.084,"n_econ":6.99,"p_sr":21.786,"n_sr":16.246},{"id":7364,"name":"Haris Rauf","p_rv":22.588,"p_wb":154.518,"normal":2.137,"A":6.017,"A_rank":15,"passes_gate":false,"rank":24,"score":6.38,"p_top10":0.193,"band":"near-tie","rank_p10":8.0,"rank_p90":45.1,"boot_median_rank":26.0,"p_balls":270.597,"n_balls":703.403,"matches":45,"p_econ":8.228,"n_econ":8.76,"p_sr":14.669,"n_sr":13.135},{"id":1758,"name":"Patrick Cummins","p_rv":10.05,"p_wb":118.331,"normal":4.723,"A":2.962,"A_rank":26,"passes_gate":false,"rank":25,"score":5.789,"p_top10":0.113,"band":"near-tie","rank_p10":9.9,"rank_p90":46.0,"boot_median_rank":26.0,"p_balls":174.373,"n_balls":962.627,"matches":50,"p_econ":8.901,"n_econ":9.406,"p_sr":22.163,"n_sr":20.424},{"id":7967,"name":"Noor Ahmad","p_rv":-10.279,"p_wb":139.642,"normal":11.681,"A":-2.851,"A_rank":47,"passes_gate":false,"rank":26,"score":5.633,"p_top10":0.023,"band":"near-tie","rank_p10":16.0,"rank_p90":45.1,"boot_median_rank":28.0,"p_balls":184.929,"n_balls":1264.071,"matches":69,"p_econ":8.645,"n_econ":7.897,"p_sr":20.26,"n_sr":17.112},{"id":360,"name":"Bhuvneshwar Kumar","p_rv":-12.504,"p_wb":304.303,"normal":15.386,"A":-2.381,"A_rank":45,"passes_gate":false,"rank":27,"score":5.569,"p_top10":0.09,"band":"near-tie","rank_p10":14.9,"rank_p90":45.1,"boot_median_rank":25.0,"p_balls":443.968,"n_balls":1735.032,"matches":99,"p_econ":9.728,"n_econ":7.901,"p_sr":22.317,"n_sr":18.635},{"id":3644,"name":"Kuldeep Yadav","p_rv":9.142,"p_wb":178.605,"normal":5.547,"A":2.288,"A_rank":27,"passes_gate":false,"rank":28,"score":5.388,"p_top10":0.147,"band":"near-tie","rank_p10":9.0,"rank_p90":45.1,"boot_median_rank":28.0,"p_balls":244.319,"n_balls":1639.681,"matches":87,"p_econ":7.684,"n_econ":8.032,"p_sr":16.308,"n_sr":16.072},{"id":2681,"name":"Taskin Ahmed","p_rv":11.433,"p_wb":117.472,"normal":3.64,"A":3.379,"A_rank":21,"passes_gate":false,"rank":29,"score":5.354,"p_top10":0.16,"band":"near-tie","rank_p10":9.0,"rank_p90":46.0,"boot_median_rank":26.0,"p_balls":189.842,"n_balls":814.158,"matches":44,"p_econ":7.513,"n_econ":8.097,"p_sr":21.201,"n_sr":15.95},{"id":7322,"name":"Yash Dayal","p_rv":19.836,"p_wb":137.521,"normal":1.074,"A":5.534,"A_rank":18,"passes_gate":false,"rank":30,"score":5.27,"p_top10":0.1,"band":"near-tie","rank_p10":10.9,"rank_p90":47.0,"boot_median_rank":29.0,"p_balls":187.156,"n_balls":670.844,"matches":42,"p_econ":9.742,"n_econ":9.531,"p_sr":20.699,"n_sr":20.991},{"id":4101,"name":"Mitchell Santner","p_rv":-0.031,"p_wb":135.303,"normal":7.188,"A":-0.009,"A_rank":36,"passes_gate":false,"rank":31,"score":4.947,"p_top10":0.04,"band":"near-tie","rank_p10":16.9,"rank_p90":46.0,"boot_median_rank":28.0,"p_balls":211.189,"n_balls":1489.811,"matches":81,"p_econ":6.983,"n_econ":7.517,"p_sr":17.963,"n_sr":20.341},{"id":2984,"name":"Sikandar Raza","p_rv":10.878,"p_wb":122.431,"normal":2.214,"A":3.168,"A_rank":24,"passes_gate":false,"rank":32,"score":4.147,"p_top10":0.07,"band":"near-tie","rank_p10":13.9,"rank_p90":48.0,"boot_median_rank":30.0,"p_balls":176.085,"n_balls":914.915,"matches":52,"p_econ":6.13,"n_econ":7.249,"p_sr":20.912,"n_sr":26.458},{"id":2411,"name":"Sandeep Sharma","p_rv":11.219,"p_wb":118.433,"normal":0.406,"A":3.306,"A_rank":22,"passes_gate":false,"rank":33,"score":2.972,"p_top10":0.09,"band":"near-tie","rank_p10":11.0,"rank_p90":54.0,"boot_median_rank":35.0,"p_balls":169.488,"n_balls":773.512,"matches":42,"p_econ":10.516,"n_econ":8.751,"p_sr":17.577,"n_sr":28.274},{"id":2261,"name":"Harshal Patel","p_rv":-2.462,"p_wb":170.357,"normal":4.538,"A":-0.629,"A_rank":38,"passes_gate":false,"rank":34,"score":2.371,"p_top10":0.02,"band":"near-tie","rank_p10":21.9,"rank_p90":47.1,"boot_median_rank":34.0,"p_balls":320.614,"n_balls":1286.386,"matches":77,"p_econ":10.142,"n_econ":9.012,"p_sr":17.329,"n_sr":16.816},{"id":4489,"name":"Prasidh Krishna","p_rv":-7.286,"p_wb":135.223,"normal":4.3,"A":-2.046,"A_rank":44,"passes_gate":false,"rank":35,"score":1.29,"p_top10":0.057,"band":"near-tie","rank_p10":17.0,"rank_p90":55.0,"boot_median_rank":36.5,"p_balls":200.351,"n_balls":948.649,"matches":51,"p_econ":9.534,"n_econ":9.019,"p_sr":18.986,"n_sr":16.513},{"id":3276,"name":"Gudakesh Motie","p_rv":10.002,"p_wb":107.267,"normal":-1.728,"A":3.048,"A_rank":25,"passes_gate":false,"rank":36,"score":1.183,"p_top10":0.033,"band":"near-tie","rank_p10":13.0,"rank_p90":53.1,"boot_median_rank":36.0,"p_balls":150.292,"n_balls":551.708,"matches":35,"p_econ":6.957,"n_econ":8.381,"p_sr":15.152,"n_sr":26.171},{"id":1566,"name":"Mohammed Shami","p_rv":5.944,"p_wb":139.204,"normal":-0.327,"A":1.65,"A_rank":31,"passes_gate":false,"rank":37,"score":1.13,"p_top10":0.147,"band":"near-tie","rank_p10":9.0,"rank_p90":54.1,"boot_median_rank":36.0,"p_balls":187.8,"n_balls":1045.2,"matches":55,"p_econ":8.288,"n_econ":8.7,"p_sr":12.749,"n_sr":19.621},{"id":5944,"name":"Mohammed Siraj","p_rv":-18.611,"p_wb":273.199,"normal":7.575,"A":-3.767,"A_rank":52,"passes_gate":false,"rank":38,"score":0.718,"p_top10":0.067,"band":"near-tie","rank_p10":17.0,"rank_p90":54.1,"boot_median_rank":38.5,"p_balls":350.18,"n_balls":1401.82,"matches":80,"p_econ":8.93,"n_econ":8.767,"p_sr":19.182,"n_sr":21.322},{"id":2876,"name":"Axar Patel","p_rv":1.114,"p_wb":260.131,"normal":0.199,"A":0.232,"A_rank":35,"passes_gate":false,"rank":39,"score":0.305,"p_top10":0.03,"band":"near-tie","rank_p10":23.0,"rank_p90":50.0,"boot_median_rank":36.0,"p_balls":361.886,"n_balls":2248.114,"matches":132,"p_econ":7.791,"n_econ":7.895,"p_sr":28.892,"n_sr":21.726},{"id":4816,"name":"Khaleel Ahmed","p_rv":1.207,"p_wb":182.545,"normal":-0.699,"A":0.299,"A_rank":34,"passes_gate":false,"rank":40,"score":-0.185,"p_top10":0.103,"band":"near-tie","rank_p10":10.0,"rank_p90":57.0,"boot_median_rank":38.5,"p_balls":249.063,"n_balls":948.937,"matches":56,"p_econ":8.872,"n_econ":9.021,"p_sr":19.659,"n_sr":19.236},{"id":305,"name":"Ravichandran Ashwin","p_rv":-15.296,"p_wb":120.145,"normal":4.625,"A":-4.485,"A_rank":53,"passes_gate":false,"rank":41,"score":-0.338,"p_top10":0.007,"band":"near-tie","rank_p10":26.0,"rank_p90":51.0,"boot_median_rank":40.0,"p_balls":223.75,"n_balls":1180.25,"matches":61,"p_econ":7.998,"n_econ":7.809,"p_sr":20.756,"n_sr":32.586},{"id":7240,"name":"FazalHaq Farooqi","p_rv":-6.19,"p_wb":133.099,"normal":1.153,"A":-1.749,"A_rank":43,"passes_gate":false,"rank":42,"score":-0.631,"p_top10":0.017,"band":"near-tie","rank_p10":25.9,"rank_p90":55.0,"boot_median_rank":42.0,"p_balls":213.496,"n_balls":813.504,"matches":50,"p_econ":8.3,"n_econ":8.135,"p_sr":19.752,"n_sr":23.117},{"id":5041,"name":"Mukesh Kumar","p_rv":22.62,"p_wb":183.553,"normal":-8.613,"A":5.593,"A_rank":17,"passes_gate":false,"rank":43,"score":-0.666,"p_top10":0.04,"band":"near-tie","rank_p10":12.0,"rank_p90":55.1,"boot_median_rank":39.0,"p_balls":245.914,"n_balls":884.086,"matches":58,"p_econ":9.282,"n_econ":10.423,"p_sr":20.067,"n_sr":18.517},{"id":2417,"name":"Akeal Hosein","p_rv":6.049,"p_wb":227.986,"normal":-5.451,"A":1.348,"A_rank":32,"passes_gate":false,"rank":44,"score":-1.952,"p_top10":0.043,"band":"near-tie","rank_p10":12.0,"rank_p90":56.0,"boot_median_rank":41.0,"p_balls":307.699,"n_balls":1324.301,"matches":75,"p_econ":7.488,"n_econ":7.749,"p_sr":16.875,"n_sr":23.329},{"id":6806,"name":"Tushar Deshpande","p_rv":-1.277,"p_wb":154.062,"normal":-2.543,"A":-0.341,"A_rank":37,"passes_gate":false,"rank":45,"score":-1.961,"p_top10":0.023,"band":"near-tie","rank_p10":23.9,"rank_p90":55.0,"boot_median_rank":43.0,"p_balls":211.197,"n_balls":783.803,"matches":47,"p_econ":9.591,"n_econ":10.011,"p_sr":20.477,"n_sr":18.362},{"id":6676,"name":"Azmatullah Omarzai","p_rv":-26.467,"p_wb":191.943,"normal":5.225,"A":-6.411,"A_rank":56,"passes_gate":false,"rank":46,"score":-2.194,"p_top10":0.0,"band":"near-tie","rank_p10":26.0,"rank_p90":53.0,"boot_median_rank":41.5,"p_balls":270.873,"n_balls":784.127,"matches":64,"p_econ":9.478,"n_econ":8.43,"p_sr":23.348,"n_sr":18.494},{"id":6161,"name":"Rahul Chahar","p_rv":-14.445,"p_wb":86.127,"normal":0.996,"A":-4.705,"A_rank":54,"passes_gate":false,"rank":47,"score":-2.967,"p_top10":0.003,"band":"near-tie","rank_p10":25.0,"rank_p90":56.0,"boot_median_rank":45.0,"p_balls":157.483,"n_balls":708.517,"matches":42,"p_econ":8.604,"n_econ":8.195,"p_sr":26.576,"n_sr":27.173},{"id":7808,"name":"Marco Jansen","p_rv":-2.69,"p_wb":185.705,"normal":-4.088,"A":-0.662,"A_rank":39,"passes_gate":false,"rank":48,"score":-3.079,"p_top10":0.053,"band":"near-tie","rank_p10":12.0,"rank_p90":61.0,"boot_median_rank":45.5,"p_balls":225.105,"n_balls":1037.895,"matches":56,"p_econ":10.26,"n_econ":9.535,"p_sr":18.756,"n_sr":25.316},{"id":29888,"name":"Harshit Rana","p_rv":1.181,"p_wb":162.943,"normal":-6.403,"A":0.308,"A_rank":33,"passes_gate":false,"rank":49,"score":-3.895,"p_top10":0.013,"band":"near-tie","rank_p10":26.8,"rank_p90":57.0,"boot_median_rank":45.0,"p_balls":219.259,"n_balls":669.741,"matches":43,"p_econ":8.923,"n_econ":9.756,"p_sr":12.483,"n_sr":17.425},{"id":3653,"name":"Avesh Khan","p_rv":-14.295,"p_wb":220.142,"normal":-2.361,"A":-3.241,"A_rank":49,"passes_gate":false,"rank":50,"score":-4.11,"p_top10":0.01,"band":"near-tie","rank_p10":28.9,"rank_p90":57.0,"boot_median_rank":47.0,"p_balls":332.571,"n_balls":1339.429,"matches":79,"p_econ":9.866,"n_econ":9.565,"p_sr":18.101,"n_sr":19.806},{"id":1612,"name":"Yuzvendra Chahal","p_rv":-12.0,"p_wb":224.063,"normal":-3.28,"A":-2.697,"A_rank":46,"passes_gate":false,"rank":51,"score":-4.167,"p_top10":0.0,"band":"near-tie","rank_p10":33.9,"rank_p90":56.0,"boot_median_rank":46.0,"p_balls":377.921,"n_balls":1736.079,"matches":96,"p_econ":8.55,"n_econ":8.691,"p_sr":15.319,"n_sr":17.837},{"id":2399,"name":"Dushmantha Chameera","p_rv":-47.049,"p_wb":121.102,"normal":7.766,"A":-13.757,"A_rank":64,"passes_gate":false,"rank":52,"score":-5.64,"p_top10":0.007,"band":"near-tie","rank_p10":22.0,"rank_p90":62.0,"boot_median_rank":50.0,"p_balls":179.875,"n_balls":935.125,"matches":51,"p_econ":10.08,"n_econ":8.543,"p_sr":22.795,"n_sr":19.042},{"id":6464,"name":"Arshdeep Singh","p_rv":-53.716,"p_wb":508.439,"normal":2.64,"A":-7.365,"A_rank":59,"passes_gate":false,"rank":53,"score":-5.665,"p_top10":0.007,"band":"near-tie","rank_p10":33.9,"rank_p90":60.0,"boot_median_rank":50.0,"p_balls":692.63,"n_balls":2449.37,"matches":143,"p_econ":9.634,"n_econ":9.026,"p_sr":22.212,"n_sr":15.619},{"id":8746,"name":"Vaibhav Arora","p_rv":-12.344,"p_wb":167.971,"normal":-6.302,"A":-3.174,"A_rank":48,"passes_gate":false,"rank":54,"score":-6.678,"p_top10":0.003,"band":"near-tie","rank_p10":30.0,"rank_p90":60.0,"boot_median_rank":50.0,"p_balls":219.107,"n_balls":652.893,"matches":43,"p_econ":9.689,"n_econ":9.802,"p_sr":18.619,"n_sr":19.073},{"id":4409,"name":"Sam Curran","p_rv":-3.264,"p_wb":162.868,"normal":-9.246,"A":-0.851,"A_rank":41,"passes_gate":false,"rank":55,"score":-6.698,"p_top10":0.003,"band":"near-tie","rank_p10":37.9,"rank_p90":60.0,"boot_median_rank":52.0,"p_balls":265.616,"n_balls":1030.384,"matches":69,"p_econ":9.106,"n_econ":9.686,"p_sr":31.137,"n_sr":21.258},{"id":2636,"name":"Adam Zampa","p_rv":-12.024,"p_wb":121.326,"normal":-6.665,"A":-3.513,"A_rank":50,"passes_gate":false,"rank":56,"score":-7.599,"p_top10":0.0,"band":"near-tie","rank_p10":38.0,"rank_p90":60.0,"boot_median_rank":52.0,"p_balls":187.565,"n_balls":898.435,"matches":47,"p_econ":8.077,"n_econ":8.499,"p_sr":23.787,"n_sr":16.602},{"id":829,"name":"Mitchell Starc","p_rv":-39.569,"p_wb":155.806,"normal":-0.59,"A":-10.504,"A_rank":61,"passes_gate":false,"rank":57,"score":-9.07,"p_top10":0.003,"band":"near-tie","rank_p10":35.9,"rank_p90":63.0,"boot_median_rank":56.0,"p_balls":197.595,"n_balls":545.405,"matches":35,"p_econ":10.116,"n_econ":9.561,"p_sr":16.758,"n_sr":13.235},{"id":7503,"name":"Ravi Bishnoi","p_rv":-45.919,"p_wb":280.71,"normal":-3.031,"A":-9.154,"A_rank":60,"passes_gate":false,"rank":58,"score":-9.473,"p_top10":0.0,"band":"near-tie","rank_p10":41.0,"rank_p90":62.0,"boot_median_rank":54.0,"p_balls":432.143,"n_balls":1852.857,"matches":106,"p_econ":8.657,"n_econ":8.262,"p_sr":20.176,"n_sr":18.988},{"id":2847,"name":"Shardul Thakur","p_rv":-17.583,"p_wb":105.267,"normal":-7.452,"A":-5.391,"A_rank":55,"passes_gate":false,"rank":59,"score":-9.855,"p_top10":0.0,"band":"near-tie","rank_p10":37.9,"rank_p90":62.0,"boot_median_rank":55.0,"p_balls":152.34,"n_balls":801.66,"matches":49,"p_econ":11.554,"n_econ":10.148,"p_sr":16.356,"n_sr":18.35},{"id":2639,"name":"Marcus Stoinis","p_rv":-11.762,"p_wb":108.142,"normal":-13.445,"A":-3.575,"A_rank":51,"passes_gate":false,"rank":60,"score":-12.764,"p_top10":0.0,"band":"near-tie","rank_p10":50.0,"rank_p90":63.0,"boot_median_rank":59.0,"p_balls":166.305,"n_balls":556.695,"matches":53,"p_econ":10.309,"n_econ":9.647,"p_sr":12.957,"n_sr":17.863},{"id":1107,"name":"Mohammad Nabi","p_rv":-23.012,"p_wb":108.096,"normal":-12.218,"A":-6.995,"A_rank":57,"passes_gate":false,"rank":61,"score":-14.62,"p_top10":0.0,"band":"near-tie","rank_p10":50.0,"rank_p90":63.0,"boot_median_rank":59.0,"p_balls":171.965,"n_balls":508.035,"matches":44,"p_econ":7.894,"n_econ":8.535,"p_sr":22.069,"n_sr":23.955},{"id":3330,"name":"Hardik Pandya","p_rv":-52.184,"p_wb":182.14,"normal":-9.573,"A":-12.948,"A_rank":62,"passes_gate":false,"rank":62,"score":-16.78,"p_top10":0.0,"band":"near-tie","rank_p10":54.0,"rank_p90":64.0,"boot_median_rank":61.0,"p_balls":287.074,"n_balls":1495.926,"matches":106,"p_econ":9.766,"n_econ":8.875,"p_sr":27.126,"n_sr":20.946},{"id":3275,"name":"Alzarri Joseph","p_rv":-46.731,"p_wb":133.444,"normal":-9.254,"A":-13.188,"A_rank":63,"passes_gate":false,"rank":63,"score":-17.186,"p_top10":0.0,"band":"near-tie","rank_p10":54.0,"rank_p90":64.0,"boot_median_rank":61.0,"p_balls":232.392,"n_balls":908.608,"matches":52,"p_econ":10.475,"n_econ":9.481,"p_sr":14.441,"n_sr":22.212},{"id":6726,"name":"Romario Shepherd","p_rv":-28.662,"p_wb":183.94,"normal":-20.879,"A":-7.08,"A_rank":58,"passes_gate":false,"rank":64,"score":-18.866,"p_top10":0.0,"band":"near-tie","rank_p10":54.0,"rank_p90":64.0,"boot_median_rank":62.0,"p_balls":262.103,"n_balls":1222.897,"matches":87,"p_econ":9.968,"n_econ":10.617,"p_sr":14.034,"n_sr":20.272}],"detail":{"Jasprit Bumrah":{"pvn":{"role":"bowl","rank":1,"name":"Jasprit Bumrah","pressure_balls":323,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":43.7,"pressure_rv_per100":23.3,"normal_balls":1330,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":45.5,"normal_rv_per100":37.4,"gap_rv_per100":-14.1,"pressure_rv_lo":5.6,"pressure_rv_hi":43.4,"normal_rv_lo":26.4,"normal_rv_hi":48.5,"gap_lo":-34.1,"gap_hi":7.4,"pressure_econ":7.53,"pressure_wkts":12.3,"pressure_balls_per_wkt":26.3,"normal_econ":7.08,"normal_wkts":69.7,"normal_balls_per_wkt":19.1},"why":"+23.3 runs saved vs an average player per 100 pressure balls (90% range +5.6 to +43.4) over 323 balls; economy 7.53 under pressure vs 7.08 normally; top 10 in 70% of resamples.","seasons":{"2022":-10.6,"2023":null,"2024":137.7,"2025":43.6,"2026":-13.6},"split":[{"competition":"IPL","situation":"pressure","balls":244,"rv_per100":20.2},{"competition":"IPL","situation":"normal","balls":923,"rv_per100":47.3},{"competition":"T20I","situation":"pressure","balls":79,"rv_per100":32.6},{"competition":"T20I","situation":"normal","balls":408,"rv_per100":15.2}],"model":{"rank_models_A":1,"rank_models_B":2,"rank_second_16fit":1}},"Mustafizur Rahman":{"pvn":{"role":"bowl","rank":2,"name":"Mustafizur Rahman","pressure_balls":275,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":43.0,"pressure_rv_per100":31.6,"normal_balls":1258,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":40.3,"normal_rv_per100":23.9,"gap_rv_per100":7.7,"pressure_rv_lo":7.9,"pressure_rv_hi":52.6,"normal_rv_lo":14.6,"normal_rv_hi":34.3,"gap_lo":-18.3,"gap_hi":31.0,"pressure_econ":8.17,"pressure_wkts":19.0,"pressure_balls_per_wkt":14.5,"normal_econ":7.71,"normal_wkts":60.0,"normal_balls_per_wkt":21.0},"why":"+31.6 runs saved vs an average player per 100 pressure balls (90% range +7.9 to +52.6) over 275 balls; economy 8.17 under pressure vs 7.71 normally; top 10 in 77% of resamples.","seasons":{"2022":-2.5,"2023":23.1,"2024":29.9,"2025":65.1,"2026":null},"split":[{"competition":"IPL","situation":"pressure","balls":68,"rv_per100":4.6},{"competition":"IPL","situation":"normal","balls":438,"rv_per100":23.7},{"competition":"T20I","situation":"pressure","balls":208,"rv_per100":40.4},{"competition":"T20I","situation":"normal","balls":820,"rv_per100":24.0}],"model":{"rank_models_A":2,"rank_models_B":1,"rank_second_16fit":2}},"Sunil Narine":{"pvn":{"role":"bowl","rank":3,"name":"Sunil Narine","pressure_balls":229,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":42.2,"pressure_rv_per100":29.6,"normal_balls":1276,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":37.5,"normal_rv_per100":22.9,"gap_rv_per100":6.7,"pressure_rv_lo":8.8,"pressure_rv_hi":48.7,"normal_rv_lo":13.6,"normal_rv_hi":32.0,"gap_lo":-15.8,"gap_hi":28.0,"pressure_econ":6.18,"pressure_wkts":11.1,"pressure_balls_per_wkt":20.7,"normal_econ":6.96,"normal_wkts":52.9,"normal_balls_per_wkt":24.1},"why":"+29.6 runs saved vs an average player per 100 pressure balls (90% range +8.8 to +48.7) over 229 balls; economy 6.18 under pressure vs 6.96 normally; top 10 in 68% of resamples.","seasons":{"2022":28.9,"2023":-22.2,"2024":33.3,"2025":48.4,"2026":38.8},"split":[{"competition":"IPL","situation":"pressure","balls":229,"rv_per100":29.6},{"competition":"IPL","situation":"normal","balls":1277,"rv_per100":22.9}],"model":{"rank_models_A":3,"rank_models_B":3,"rank_second_16fit":3}},"Josh Hazlewood":{"pvn":{"role":"bowl","rank":4,"name":"Josh Hazlewood","pressure_balls":289,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":47.8,"pressure_rv_per100":39.4,"normal_balls":1078,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":45.7,"normal_rv_per100":13.6,"gap_rv_per100":25.8,"pressure_rv_lo":13.3,"pressure_rv_hi":64.7,"normal_rv_lo":-0.4,"normal_rv_hi":28.8,"gap_lo":-2.2,"gap_hi":52.7,"pressure_econ":7.73,"pressure_wkts":26.1,"pressure_balls_per_wkt":11.1,"normal_econ":8.42,"normal_wkts":62.9,"normal_balls_per_wkt":17.1},"why":"+39.4 runs saved vs an average player per 100 pressure balls (90% range +13.3 to +64.7) over 289 balls; economy 7.73 under pressure vs 8.42 normally; top 10 in 77% of resamples.","seasons":{"2022":52.5,"2023":50.3,"2024":null,"2025":57.3,"2026":-8.8},"split":[{"competition":"IPL","situation":"pressure","balls":203,"rv_per100":28.8},{"competition":"IPL","situation":"normal","balls":661,"rv_per100":16.5},{"competition":"T20I","situation":"pressure","balls":87,"rv_per100":64.0},{"competition":"T20I","situation":"normal","balls":417,"rv_per100":9.2}],"model":{"rank_models_A":4,"rank_models_B":4,"rank_second_16fit":6}},"Rashid Khan":{"pvn":{"role":"bowl","rank":5,"name":"Rashid Khan","pressure_balls":343,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":40.2,"pressure_rv_per100":28.2,"normal_balls":2331,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":35.5,"normal_rv_per100":15.9,"gap_rv_per100":12.3,"pressure_rv_lo":13.7,"pressure_rv_hi":43.9,"normal_rv_lo":8.0,"normal_rv_hi":23.3,"gap_lo":-2.7,"gap_hi":29.1,"pressure_econ":6.67,"pressure_wkts":25.1,"pressure_balls_per_wkt":13.7,"normal_econ":7.49,"normal_wkts":123.9,"normal_balls_per_wkt":18.8},"why":"+28.2 runs saved vs an average player per 100 pressure balls (90% range +13.7 to +43.9) over 343 balls; economy 6.67 under pressure vs 7.49 normally; top 10 in 82% of resamples.","seasons":{"2022":20.7,"2023":15.7,"2024":28.8,"2025":36.9,"2026":46.1},"split":[{"competition":"IPL","situation":"pressure","balls":170,"rv_per100":40.7},{"competition":"IPL","situation":"normal","balls":1506,"rv_per100":6.1},{"competition":"T20I","situation":"pressure","balls":174,"rv_per100":16.0},{"competition":"T20I","situation":"normal","balls":825,"rv_per100":33.7}],"model":{"rank_models_A":5,"rank_models_B":5,"rank_second_16fit":4}},"Mohsin Khan":{"pvn":{"role":"bowl","rank":6,"name":"Mohsin Khan","pressure_balls":163,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":43.9,"pressure_rv_per100":32.1,"normal_balls":490,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":42.6,"normal_rv_per100":21.7,"gap_rv_per100":10.4,"pressure_rv_lo":-3.6,"pressure_rv_hi":63.6,"normal_rv_lo":-3.2,"normal_rv_hi":45.5,"gap_lo":-33.4,"gap_hi":48.8,"pressure_econ":7.91,"pressure_wkts":9.8,"pressure_balls_per_wkt":16.7,"normal_econ":8.56,"normal_wkts":28.2,"normal_balls_per_wkt":17.4},"why":"+32.1 runs saved vs an average player per 100 pressure balls (90% range -3.6 to +63.6) over 163 balls; economy 7.91 under pressure vs 8.56 normally; top 10 in 28% of resamples.","seasons":{"2022":52.9,"2023":73.2,"2024":27.5,"2025":null,"2026":-13.4},"split":[{"competition":"IPL","situation":"pressure","balls":164,"rv_per100":32.1},{"competition":"IPL","situation":"normal","balls":490,"rv_per100":21.7}],"model":{"rank_models_A":15,"rank_models_B":8,"rank_second_16fit":8}},"Mohammad Nawaz":{"pvn":{"role":"bowl","rank":7,"name":"Mohammad Nawaz","pressure_balls":217,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":35.7,"pressure_rv_per100":23.8,"normal_balls":786,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":34.8,"normal_rv_per100":8.4,"gap_rv_per100":15.4,"pressure_rv_lo":-1.3,"pressure_rv_hi":51.1,"normal_rv_lo":-6.3,"normal_rv_hi":22.2,"gap_lo":-10.8,"gap_hi":43.5,"pressure_econ":6.52,"pressure_wkts":17.7,"pressure_balls_per_wkt":12.3,"normal_econ":7.3,"normal_wkts":48.3,"normal_balls_per_wkt":16.3},"why":"+23.8 runs saved vs an average player per 100 pressure balls (90% range -1.3 to +51.1) over 217 balls; economy 6.52 under pressure vs 7.3 normally; top 10 in 63% of resamples.","seasons":{"2022":22.8,"2023":null,"2024":-8.5,"2025":30.8,"2026":null},"split":[{"competition":"T20I","situation":"pressure","balls":217,"rv_per100":23.8},{"competition":"T20I","situation":"normal","balls":787,"rv_per100":8.4}],"model":{"rank_models_A":6,"rank_models_B":6,"rank_second_16fit":5}},"Matheesha Pathirana":{"pvn":{"role":"bowl","rank":8,"name":"Matheesha Pathirana","pressure_balls":175,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":38.0,"pressure_rv_per100":25.6,"normal_balls":855,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":37.3,"normal_rv_per100":16.4,"gap_rv_per100":9.2,"pressure_rv_lo":-3.0,"pressure_rv_hi":51.1,"normal_rv_lo":1.9,"normal_rv_hi":29.7,"gap_lo":-23.6,"gap_hi":41.3,"pressure_econ":8.7,"pressure_wkts":16.0,"pressure_balls_per_wkt":10.9,"normal_econ":8.74,"normal_wkts":58.0,"normal_balls_per_wkt":14.8},"why":"+25.6 runs saved vs an average player per 100 pressure balls (90% range -3.0 to +51.1) over 175 balls; economy 8.7 under pressure vs 8.74 normally; top 10 in 33% of resamples.","seasons":{"2022":null,"2023":60.7,"2024":30.6,"2025":-3.0,"2026":-28.2},"split":[{"competition":"IPL","situation":"pressure","balls":116,"rv_per100":41.0},{"competition":"IPL","situation":"normal","balls":550,"rv_per100":20.8},{"competition":"T20I","situation":"pressure","balls":60,"rv_per100":-4.2},{"competition":"T20I","situation":"normal","balls":305,"rv_per100":8.5}],"model":{"rank_models_A":7,"rank_models_B":9,"rank_second_16fit":7}},"Krunal Pandya":{"pvn":{"role":"bowl","rank":9,"name":"Krunal Pandya","pressure_balls":215,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":35.6,"pressure_rv_per100":41.8,"normal_balls":1011,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":30.4,"normal_rv_per100":4.8,"gap_rv_per100":37.0,"pressure_rv_lo":13.5,"pressure_rv_hi":67.9,"normal_rv_lo":-7.5,"normal_rv_hi":16.3,"gap_lo":7.4,"gap_hi":67.1,"pressure_econ":6.21,"pressure_wkts":16.8,"pressure_balls_per_wkt":12.8,"normal_econ":8.11,"normal_wkts":38.2,"normal_balls_per_wkt":26.5},"why":"+41.8 runs saved vs an average player per 100 pressure balls (90% range +13.5 to +67.9) over 215 balls; economy 6.21 under pressure vs 8.11 normally; top 10 in 63% of resamples.","seasons":{"2022":65.4,"2023":17.5,"2024":89.1,"2025":13.6,"2026":36.3},"split":[{"competition":"IPL","situation":"pressure","balls":215,"rv_per100":41.8},{"competition":"IPL","situation":"normal","balls":1012,"rv_per100":4.8}],"model":{"rank_models_A":8,"rank_models_B":7,"rank_second_16fit":9}},"Lockie Ferguson":{"pvn":{"role":"bowl","rank":10,"name":"Lockie Ferguson","pressure_balls":153,"pressure_sr":null,"pressure_avg":null,"pressure_boundary%":null,"pressure_dot%":50.5,"pressure_rv_per100":44.2,"normal_balls":922,"normal_sr":null,"normal_avg":null,"normal_boundary%":null,"normal_dot%":40.7,"normal_rv_per100":7.9,"gap_rv_per100":36.3,"pressure_rv_lo":9.2,"pressure_rv_hi":73.1,"normal_rv_lo":-6.3,"normal_rv_hi":20.8,"gap_lo":0.9,"gap_hi":69.0,"pressure_econ":7.67,"pressure_wkts":11.3,"pressure_balls_per_wkt":13.5,"normal_econ":9.1,"normal_wkts":47.7,"normal_balls_per_wkt":19.4},"why":"+44.2 runs saved vs an average player per 100 pressure balls (90% range +9.2 to +73.1) over 153 balls; economy 7.67 under pressure vs 9.1 normally; top 10 in 36% of resamples.","seasons":{"2022":89.6,"2023":-51.7,"2024":26.2,"2025":62.7,"2026":9.4},"split":[{"competition":"IPL","situation":"pressure","balls":93,"rv_per100":28.1},{"competition":"IPL","situation":"normal","balls":517,"rv_per100":-10.9},{"competition":"T20I","situation":"pressure","balls":61,"rv_per100":68.6},{"competition":"T20I","situation":"normal","balls":405,"rv_per100":31.8}],"model":{"rank_models_A":17,"rank_models_B":10,"rank_second_16fit":10}}},"sens":[{"variant":"PI>=1.25","overlap_with_base_top10":8},{"variant":"PI>=2.0","overlap_with_base_top10":2},{"variant":"no recency weights","overlap_with_base_top10":10},{"variant":"no opposition weights","overlap_with_base_top10":10},{"variant":"no knockout factor","overlap_with_base_top10":9},{"variant":"weaker pull to own normal (KC / 3)","overlap_with_base_top10":10},{"variant":"stronger pull to own normal (KC x 3)","overlap_with_base_top10":10},{"variant":"pace/spin baseline off","overlap_with_base_top10":8},{"variant":"no gate","overlap_with_base_top10":9},{"variant":"no 3-season rule","overlap_with_base_top10":10},{"variant":"hard pressure cut (no ramp)","overlap_with_base_top10":10},{"variant":"forecast-best KC (bat 250 / bowl 2000)","overlap_with_base_top10":10},{"variant":"wides cost 1.0 run (no calibration)","overlap_with_base_top10":10},{"variant":"wides cost 1.5 runs","overlap_with_base_top10":10},{"variant":"soft gate (half-width 5% of pool)","overlap_with_base_top10":9},{"variant":"gate = top 15% of pool","overlap_with_base_top10":8},{"variant":"gate = top 25% of pool","overlap_with_base_top10":10},{"variant":"gate = top 30% of pool","overlap_with_base_top10":10}],"kc_curve":[{"k":0,"gain":-22.96,"se":2.76},{"k":50,"gain":-9.81,"se":1.73},{"k":100,"gain":-4.69,"se":1.28},{"k":150,"gain":-2.06,"se":1.0},{"k":200,"gain":-0.5,"se":0.82},{"k":250,"gain":0.51,"se":0.69},{"k":300,"gain":1.21,"se":0.59},{"k":400,"gain":2.08,"se":0.45},{"k":500,"gain":2.59,"se":0.36},{"k":700,"gain":3.15,"se":0.24},{"k":1000,"gain":3.51,"se":0.13},{"k":1500,"gain":3.75,"se":0.05},{"k":2000,"gain":3.85,"se":0.0}],"kc_normal_only":4.0,"repeat":{"rise":0.12,"output":0.173,"normal":0.347,"share":0.16},"forward":[{"forecast (built on earlier seasons only)":"final rating","mean_spearman_over_3_origins":0.095,"permutation_p":0.213,"players_per_origin":"23/44/22"},{"forecast (built on earlier seasons only)":"pressure output only","mean_spearman_over_3_origins":0.08,"permutation_p":0.233,"players_per_origin":"23/44/22"},{"forecast (built on earlier seasons only)":"normal level only","mean_spearman_over_3_origins":0.063,"permutation_p":0.306,"players_per_origin":"23/44/22"}],"pool":64}},"cut":[{"cut":1.0,"share_of_balls_%":38.5,"share_of_win_swing_%":67.7,"swing_vs_average_ball":1.76,"bat_repeat_r_pressure_output":0.175,"bat_repeat_r_rise_vs_normal":-0.057,"bat_players_tested":184,"bat_top10_kept":5,"bowl_repeat_r_pressure_output":0.183,"bowl_repeat_r_rise_vs_normal":-0.034,"bowl_players_tested":193,"bowl_top10_kept":8},{"cut":1.25,"share_of_balls_%":25.8,"share_of_win_swing_%":53.6,"swing_vs_average_ball":2.08,"bat_repeat_r_pressure_output":0.167,"bat_repeat_r_rise_vs_normal":0.035,"bat_players_tested":145,"bat_top10_kept":5,"bowl_repeat_r_pressure_output":0.192,"bowl_repeat_r_rise_vs_normal":0.115,"bowl_players_tested":143,"bowl_top10_kept":8},{"cut":1.5,"share_of_balls_%":16.9,"share_of_win_swing_%":41.8,"swing_vs_average_ball":2.47,"bat_repeat_r_pressure_output":0.197,"bat_repeat_r_rise_vs_normal":0.065,"bat_players_tested":105,"bat_top10_kept":10,"bowl_repeat_r_pressure_output":0.173,"bowl_repeat_r_rise_vs_normal":0.12,"bowl_players_tested":104,"bowl_top10_kept":10},{"cut":1.75,"share_of_balls_%":11.5,"share_of_win_swing_%":32.9,"swing_vs_average_ball":2.86,"bat_repeat_r_pressure_output":0.246,"bat_repeat_r_rise_vs_normal":0.163,"bat_players_tested":58,"bat_top10_kept":7,"bowl_repeat_r_pressure_output":0.04,"bowl_repeat_r_rise_vs_normal":0.203,"bowl_players_tested":70,"bowl_top10_kept":6},{"cut":2.0,"share_of_balls_%":8.0,"share_of_win_swing_%":26.2,"swing_vs_average_ball":3.29,"bat_repeat_r_pressure_output":0.201,"bat_repeat_r_rise_vs_normal":0.04,"bat_players_tested":33,"bat_top10_kept":2,"bowl_repeat_r_pressure_output":-0.067,"bowl_repeat_r_rise_vs_normal":0.242,"bowl_players_tested":37,"bowl_top10_kept":2}],"phase":{"innings":[1,2],"cols":["Powerplay","Middle","Death"],"vals":[[20.4,3.2,11.5],[19.5,23.5,33.1]]},"headline":{"balls":16.9,"swing":41.8,"lever":2.47},"terrain":{"rows":["<6","6-8","8-10","10-12","12-14","14-16","16+"],"cols":["0-2","2-4","4-6","6-8","8-10","10-12","12-14","14-20"],"pi":[[1.043,0.266,0.244,0.21,0.203,0.178,0.205,0.268],[3.656,1.546,0.888,0.804,0.859,1.063,1.137,1.085],[5.203,2.743,2.283,1.737,1.67,1.448,1.317,1.268],[7.315,3.811,2.301,1.519,1.192,0.958,0.862,0.826],[6.537,2.833,1.495,0.734,0.537,0.453,0.311,0.38],[5.299,1.488,0.593,0.333,0.27,0.156,0.144,0.173],[1.275,0.292,0.145,0.107,0.054,0.047,0.034,0.038]],"n":[[771,1420,1504,1419,1272,1243,1184,2396],[267,735,1025,1324,1502,1782,2065,6881],[286,795,1284,1713,2235,2604,2886,10833],[328,757,1325,1848,2139,2324,2418,7231],[216,792,1198,1330,1418,1216,910,1783],[256,735,918,894,620,387,237,280],[2779,2448,1543,772,328,154,75,64]],"share_hp":24.0},"alt":{"decides":[{"balls used":"pressure balls (PI 1.5+)","winner_predicted_%":82.1,"matches":610},{"balls used":"same number of ordinary balls, drawn at random","winner_predicted_%":52.3,"matches":610},{"balls used":"all ordinary balls (about 5x as many)","winner_predicted_%":71.2,"matches":810}],"rise":[{"role":"bat","players":60,"clear_risers":7,"clear_dippers":5,"expected_each_side_by_luck":3.0,"average_gap":3.1,"spread_observed_sd":24.6,"spread_from_luck_sd":21.9,"spread_real_sd":11.3,"share_of_spread_real_%":21.0,"risers_names":"Daryl Mitchell, Kusal Mendis, Prabhsimran Singh, Virat Kohli, Yashasvi Jaiswal, Dasun Shanaka, Shreyas Iyer","dippers_names":"Devon Conway, Ryan Rickelton, Muhammad Waseem, Charith Asalanka, Nicholas Pooran"},{"role":"bowl","players":64,"clear_risers":4,"clear_dippers":3,"expected_each_side_by_luck":3.2,"average_gap":-0.2,"spread_observed_sd":15.4,"spread_from_luck_sd":16.3,"spread_real_sd":0.0,"share_of_spread_real_%":0.0,"risers_names":"Krunal Pandya, Lockie Ferguson, Mukesh Kumar, Jason Holder","dippers_names":"Dushmantha Chameera, Blessing Muzarabani, Azmatullah Omarzai"}],"naive":{"bat":[{"list":"death overs","rank":1,"name":"Suryakumar Yadav","death_stat":215.08,"why":"pressure output 19th of 60, outside the top 20%; 19% of his death balls were pressure balls"},{"list":"death overs","rank":2,"name":"Liam Livingstone","death_stat":206.74,"why":"pressure output 28th of 60, outside the top 20%; 19% of his death balls were pressure balls"},{"list":"death overs","rank":3,"name":"Glenn Maxwell","death_stat":206.71,"why":"too few pressure balls or seasons to qualify (150+ balls, 3+ seasons)"},{"list":"death overs","rank":4,"name":"Naman Dhir","death_stat":203.43,"why":"too few pressure balls or seasons to qualify (150+ balls, 3+ seasons)"},{"list":"death overs","rank":5,"name":"Shreyas Iyer","death_stat":202.84,"why":"in both lists (pressure rank 1)"},{"list":"death overs","rank":6,"name":"Tim David","death_stat":199.82,"why":"pressure output 24th of 60, outside the top 20%; 27% of his death balls were pressure balls"},{"list":"death overs","rank":7,"name":"Glenn Phillips","death_stat":199.58,"why":"pressure output 23rd of 60, outside the top 20%; 13% of his death balls were pressure balls"},{"list":"death overs","rank":8,"name":"Tristan Stubbs","death_stat":198.29,"why":"pressure output 43rd of 60, outside the top 20%; 25% of his death balls were pressure balls"},{"list":"death overs","rank":9,"name":"Ashutosh Sharma","death_stat":197.95,"why":"too few pressure balls or seasons to qualify (150+ balls, 3+ seasons)"},{"list":"death overs","rank":10,"name":"Heinrich Klaasen","death_stat":197.44,"why":"pressure output 32nd of 60, outside the top 20%; 15% of his death balls were pressure balls"},{"list":"pressure","rank":1,"name":"Shreyas Iyer","death_stat":202.84,"why":"in both lists"},{"list":"pressure","rank":2,"name":"Abhishek Sharma","death_stat":null,"why":"under 150 death balls; 100% of his pressure balls come before the death overs"},{"list":"pressure","rank":3,"name":"Virat Kohli","death_stat":186.48,"why":"death-overs rank 24th; 93% of his pressure balls come before the death overs"},{"list":"pressure","rank":4,"name":"Namboori Tilak Varma","death_stat":190.26,"why":"death-overs rank 21st; 70% of his pressure balls come before the death overs"},{"list":"pressure","rank":5,"name":"Sai Sudharsan","death_stat":null,"why":"under 150 death balls; 95% of his pressure balls come before the death overs"},{"list":"pressure","rank":6,"name":"Pathum Nissanka","death_stat":null,"why":"under 150 death balls; 89% of his pressure balls come before the death overs"},{"list":"pressure","rank":7,"name":"Cameron Green","death_stat":173.33,"why":"death-overs rank 37th; 82% of his pressure balls come before the death overs"},{"list":"pressure","rank":8,"name":"Yashasvi Jaiswal","death_stat":null,"why":"under 150 death balls; 99% of his pressure balls come before the death overs"},{"list":"pressure","rank":9,"name":"Mitchell Marsh","death_stat":null,"why":"under 150 death balls; 93% of his pressure balls come before the death overs"},{"list":"pressure","rank":10,"name":"Daryl Mitchell","death_stat":169.58,"why":"death-overs rank 47th; 82% of his pressure balls come before the death overs"}],"bowl":[{"list":"death overs","rank":1,"name":"Sunil Narine","death_stat":6.07,"why":"in both lists (pressure rank 3)"},{"list":"death overs","rank":2,"name":"Jasprit Bumrah","death_stat":7.43,"why":"in both lists (pressure rank 1)"},{"list":"death overs","rank":3,"name":"Maheesh Theekshana","death_stat":8.14,"why":"pressure output 20th of 64, outside the top 20%; 13% of his death balls were pressure balls"},{"list":"death overs","rank":4,"name":"Noor Ahmad","death_stat":8.19,"why":"pressure output 47th of 64, outside the top 20%; 23% of his death balls were pressure balls"},{"list":"death overs","rank":5,"name":"Wanindu Hasaranga","death_stat":8.32,"why":"pressure output 16th of 64, outside the top 20%; 22% of his death balls were pressure balls"},{"list":"death overs","rank":6,"name":"Rashid Khan","death_stat":8.36,"why":"in both lists (pressure rank 5)"},{"list":"death overs","rank":7,"name":"Kuldeep Yadav","death_stat":8.49,"why":"pressure output 27th of 64, outside the top 20%; 22% of his death balls were pressure balls"},{"list":"death overs","rank":8,"name":"Shaheen Afridi","death_stat":8.5,"why":"too few pressure balls or seasons to qualify (150+ balls, 3+ seasons)"},{"list":"death overs","rank":9,"name":"Varun Chakravarthy","death_stat":8.6,"why":"pressure output 30th of 64, outside the top 20%; 18% of his death balls were pressure balls"},{"list":"death overs","rank":10,"name":"Adam Zampa","death_stat":8.81,"why":"pressure output 50th of 64, outside the top 20%; 22% of his death balls were pressure balls"},{"list":"pressure","rank":1,"name":"Jasprit Bumrah","death_stat":7.43,"why":"in both lists"},{"list":"pressure","rank":2,"name":"Mustafizur Rahman","death_stat":8.91,"why":"death-overs rank 12th; 56% of his pressure balls come before the death overs"},{"list":"pressure","rank":3,"name":"Sunil Narine","death_stat":6.07,"why":"in both lists"},{"list":"pressure","rank":4,"name":"Josh Hazlewood","death_stat":9.88,"why":"death-overs rank 30th; 73% of his pressure balls come before the death overs"},{"list":"pressure","rank":5,"name":"Rashid Khan","death_stat":8.36,"why":"in both lists"},{"list":"pressure","rank":6,"name":"Mohsin Khan","death_stat":9.85,"why":"death-overs rank 28th; 80% of his pressure balls come before the death overs"},{"list":"pressure","rank":7,"name":"Mohammad Nawaz","death_stat":null,"why":"under 150 death balls; 94% of his pressure balls come before the death overs"},{"list":"pressure","rank":8,"name":"Matheesha Pathirana","death_stat":9.15,"why":"death-overs rank 17th; 44% of his pressure balls come before the death overs"},{"list":"pressure","rank":9,"name":"Krunal Pandya","death_stat":null,"why":"under 150 death balls; 96% of his pressure balls come before the death overs"},{"list":"pressure","rank":10,"name":"Lockie Ferguson","death_stat":10.37,"why":"death-overs rank 51st; 73% of his pressure balls come before the death overs"}]},"naive_sum":[{"role":"bat","overlap_top10":1,"naive_pool":72,"ours_pressure_before_death_%":88.7,"league_pressure_before_death_%":73.4,"league_death_balls_pressure_%":20.5,"league_death_balls_decided_%":35.0},{"role":"bowl","overlap_top10":3,"naive_pool":79,"ours_pressure_before_death_%":73.2,"league_pressure_before_death_%":73.4,"league_death_balls_pressure_%":20.5,"league_death_balls_decided_%":35.0}],"backtest":[{"role":"bat","method":"ours","picks_with_30+_test_balls":10,"test_rv_per100":16.5,"beats_%_of_random_sets":63.0,"random_sd":null},{"role":"bat","method":"pressure output only","picks_with_30+_test_balls":9,"test_rv_per100":21.4,"beats_%_of_random_sets":81.0,"random_sd":null},{"role":"bat","method":"usual form only","picks_with_30+_test_balls":9,"test_rv_per100":19.1,"beats_%_of_random_sets":73.0,"random_sd":null},{"role":"bat","method":"biggest risers (pressure minus usual)","picks_with_30+_test_balls":8,"test_rv_per100":12.4,"beats_%_of_random_sets":45.0,"random_sd":null},{"role":"bat","method":"death overs (no win model)","picks_with_30+_test_balls":9,"test_rv_per100":-0.8,"beats_%_of_random_sets":4.0,"random_sd":null},{"role":"bat","method":"random 10 from the pool (average)","picks_with_30+_test_balls":10,"test_rv_per100":13.8,"beats_%_of_random_sets":null,"random_sd":8.4},{"role":"bowl","method":"ours","picks_with_30+_test_balls":9,"test_rv_per100":9.1,"beats_%_of_random_sets":94.0,"random_sd":null},{"role":"bowl","method":"pressure output only","picks_with_30+_test_balls":9,"test_rv_per100":9.0,"beats_%_of_random_sets":94.0,"random_sd":null},{"role":"bowl","method":"usual form only","picks_with_30+_test_balls":10,"test_rv_per100":15.3,"beats_%_of_random_sets":99.0,"random_sd":null},{"role":"bowl","method":"biggest risers (pressure minus usual)","picks_with_30+_test_balls":9,"test_rv_per100":-16.7,"beats_%_of_random_sets":4.0,"random_sd":null},{"role":"bowl","method":"death overs (no win model)","picks_with_30+_test_balls":9,"test_rv_per100":14.1,"beats_%_of_random_sets":99.0,"random_sd":null},{"role":"bowl","method":"random 10 from the pool (average)","picks_with_30+_test_balls":10,"test_rv_per100":-2.9,"beats_%_of_random_sets":null,"random_sd":7.8}],"chase_only":{"bat":6,"bowl":7}}};
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const f1 = v => v == null ? "–" : (+v).toFixed(1);
+const sg = v => v == null ? "–" : (v > 0 ? "+" : "") + (+v).toFixed(1);
+const ord = n => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ({1:"st",2:"nd",3:"rd"}[n % 10] || "th"));
+const ROLE = {bat: "Batters", bowl: "Bowlers"};
+const TOP = r => D.roles[r].players.filter(p => p.rank <= 10).sort((a, b) => a.rank - b.rank);
+const state = {role: "bat", y: "A", kc: {...D.kc_used}, gate: {bat: D.gate, bowl: D.gate}};
+const later = f => RM ? f() : requestAnimationFrame(() => requestAnimationFrame(f));
+
+function countUp(el, to, dec, suffix) {
+  el.textContent = to.toFixed(dec) + suffix;
+  if (RM) return;
+  const t0 = performance.now(), d = 1100;
+  const step = t => { const k = Math.min(1, (t - t0) / d), e = 1 - Math.pow(1 - k, 3);
+    el.textContent = (to * e).toFixed(dec) + suffix; if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+}
+
+// ---------- hero: stat strip, split-flap board, and every claim number (all from D)
+const CU = [];   // numbers that count up once when they come on screen
+function setNum(el, v, dec = 0, pre = "", suf = "") {
+  el.textContent = pre + (+v).toFixed(dec) + suf;
+  if (!RM) CU.push({el, v: +v, dec, pre, suf});
+}
+(function () {
+  const h = D.headline, dec = D.alt.decides[0]["winner_predicted_%"];
+  const pool = D.roles.bat.pool + D.roles.bowl.pool;
+  $("#stats").innerHTML = `
+    <div><b class="num p" id="s1"></b><span>of balls are pressure balls</span></div>
+    <div><b class="num" id="s2"></b><span>of all swings in win chance happen on them</span></div>
+    <div><b class="num p" id="s3"></b><span>of matches are won by the side that wins those balls</span></div>
+    <div><b class="num" id="s4"></b><span>players rated, IPL and T20I together</span></div>`;
+  setNum($("#s1"), h.balls, 0, "", "%"); setNum($("#s2"), h.swing, 0, "", "%");
+  setNum($("#s3"), dec, 0, "", "%"); setNum($("#s4"), pool);
+
+  // split-flap scoreboard: the two #1 picks
+  const rows = ["bat", "bowl"].map(r => ({r, p: TOP(r)[0]}));
+  $("#flapboard").innerHTML = rows.map(({r, p}) =>
+    `<button class="brow" data-role="${r}" data-name="${esc(p.name)}" aria-label="Number 1 ${r === "bat" ? "batter" : "bowler"}: ${esc(p.name)}, rating ${f1(p.score)}">
+      <span class="tag">#1 ${r === "bat" ? "BATTER" : "BOWLER"} UNDER PRESSURE</span><span class="flap" data-t="${esc(p.name.toUpperCase())}" aria-hidden="true"></span>
+      <span class="sc" aria-hidden="true">${f1(p.score)}</span></button>`).join("");
+  const ABC = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  document.querySelectorAll(".flap").forEach((f, row) => {
+    const t = f.dataset.t;
+    f.innerHTML = [...t].map(c => `<span class="${c === " " ? "sp" : ""}">${c === " " ? "" : (RM ? c : ABC[(Math.random() * 26) | 0])}</span>`).join("");
+    if (RM) return;
+    [...f.children].forEach((cell, i) => {
+      const c = t[i]; if (c === " ") return;
+      let n = 6 + i * 2 + row * 4;   // cells settle left to right, second row a beat later
+      const tick = () => { if (--n <= 0) { cell.textContent = c; return; } cell.textContent = ABC[(Math.random() * 26) | 0]; setTimeout(tick, 42); };
+      setTimeout(tick, 350);
+    });
+  });
+})();
+
+// ---------- claim numbers
+(function () {
+  const rb = D.roles.bat.repeat, rw = D.roles.bowl.repeat;
+  $("#why-bigs").innerHTML = `
+    <div><small>Rising above your own level</small><b class="num">${(+rb.rise).toFixed(2)}<span class="vs">/</span>${(+rw.rise).toFixed(2)}</b><span>carries over, batters / bowlers. 0 = pure luck</span></div>
+    <div class="p"><small>Output under pressure</small><b class="num">${(+rb.output).toFixed(2)}<span class="vs">/</span>${(+rw.output).toFixed(2)}</b><span>carries over, so that is what we rank</span></div>`;
+  const A = D.alt, dc = A.decides, rr = Object.fromEntries(A.rise.map(r => [r.role, r])), ns = Object.fromEntries(A.naive_sum.map(r => [r.role, r]));
+  setNum($("#t-dec"), dc[0]["winner_predicted_%"], 0, "", "%");
+  $("#t-dec-s").textContent = `win the pressure balls, win the match (ordinary balls: ${Math.round(dc[1]["winner_predicted_%"])}%)`;
+  $("#t-rise").innerHTML = `${rr.bat.clear_risers}<span class="vs">vs</span>${Math.round(rr.bat.expected_each_side_by_luck)}`;
+  $("#t-rise-s").textContent = `batters who clearly rise, against luck (bowlers: pure luck)`;
+  $("#t-naive").innerHTML = `${ns.bat.overlap_top10}<span class="vs">/</span>10`;
+  $("#t-naive-s").textContent = `batters shared with a death-overs list (bowlers ${ns.bowl.overlap_top10}/10)`;
+  const bt = {}; A.backtest.forEach(x => { (bt[x.method] ||= {})[x.role] = x; });
+  const dv = bt["death overs (no win model)"].bat.test_rv_per100, ov = bt["ours"].bat.test_rv_per100;
+  setNum($("#t-bt"), dv, 1, dv > 0 ? "+" : "");
+  $("#t-bt-s").textContent = `death-overs batting picks in the next two seasons (ours +${(+ov).toFixed(1)})`;
+  $("#line-bigs").innerHTML = `<b class="num">1.5</b><span><strong>The pressure line.</strong> ${Math.round(D.headline.balls)}% of balls clear it, each worth ${(+D.headline.lever).toFixed(1)}× an average ball.</span>`;
+  const kept = r => D.roles[r].sens.filter(s => s.overlap_with_base_top10 >= 8).length + "<span class=\"vs\">/</span>" + D.roles[r].sens.length;
+  $("#rob-bigs").innerHTML = `
+    <div class="big"><b class="num dbl">${kept("bat")}</b><span><strong>Batters:</strong> changes that keep 8 or more of the top 10</span></div>
+    <div class="big"><b class="num dbl">${kept("bowl")}</b><span><strong>Bowlers:</strong> changes that keep 8 or more of the top 10</span></div>`;
+  const nt = r => TOP(r).filter(p => p.band === "near-tie");
+  const fb = D.roles.bowl.forward.find(r => r["forecast (built on earlier seasons only)"] === "final rating");
+  $("#lim-tiles").innerHTML = `<em>Caution</em>` + [
+    [`${nt("bat").length + nt("bowl").length}`, `picks make the top 10 under half the time`],
+    [`${A.chase_only.bat}/10 · ${A.chase_only.bowl}/10`, `batters · bowlers stay if only chases count`],
+    [`Unproven`, `bowling list as a next-season forecast`],
+    [`Weaker`, `first-innings win model`]
+  ].map(([v, t]) => `<span><b>${v}</b> ${t}</span>`).join("");
+})();
+
+// ---------- submitted lists
+for (const role of ["bat", "bowl"]) {
+  const ps = TOP(role), mx = Math.max(...ps.map(p => p.score));
+  $("#list-" + role).innerHTML = ps.map((p, i) => `<button class="row" style="--i:${i}" data-role="${role}" data-name="${esc(p.name)}">
+    <span class="rk">${p.rank}</span>
+    <span class="nm">${esc(p.name)}<small>${ord(p.A_rank)} of ${D.roles[role].pool} under pressure · usual level ${sg(p.normal)}</small></span>
+    <span class="bar" title="rating ${f1(p.score)}"><i style="--w:${Math.max(.04, p.score / mx)};transition-delay:${i * 50}ms"></i></span>
+    <span class="chip ${p.band}">${p.band}</span></button>`).join("");
+  const sh = ps.map(p => Math.round(100 * p.p_wb / (p.p_wb + D.kc_used[role])));  // the rating divides by weighted pressure balls
+  $("#kc-" + role).textContent = `pressure = ${Math.min(...sh)}-${Math.max(...sh)}% of each rating`;
+}
+later(() => document.querySelectorAll(".board.pre").forEach(b => b.classList.remove("pre")));
+document.addEventListener("click", e => { const b = e.target.closest("[data-name]"); if (b && !b.closest("dialog")) openCard(b.dataset.role, b.dataset.name); });
+
+// ---------- odd picks
+(function () {
+  const out = [];
+  for (const role of ["bat", "bowl"]) for (const p of TOP(role)) {
+    const d = D.roles[role].detail[p.name]; if (!d || !d.pvn || d.pvn.gap_rv_per100 >= 0) continue;
+    const v = d.pvn;
+    out.push(role === "bat"
+      ? `<p><b>${esc(p.name)} (batter #${p.rank})</b> strikes at ${f1(v.pressure_sr)} under pressure vs ${f1(v.normal_sr)} normally, a dip from the best usual level in the pool. Under pressure he still adds ${sg(v.pressure_rv_per100)} runs per 100 balls over an average batter facing the same balls.</p>`
+      : `<p><b>${esc(p.name)} (bowler #${p.rank})</b> concedes ${(+v.pressure_econ).toFixed(2)} an over under pressure vs ${(+v.normal_econ).toFixed(2)} normally, yet still saves ${sg(v.pressure_rv_per100)} runs per 100 balls against an average bowler on the same balls.</p>`);
+  }
+  $("#odd").innerHTML = "<p><b>Picks that dip below their own level.</b> The dip barely repeats, so it is not held against them; their pressure output is what counts.</p>" + out.join("");
+})();
+
+// ---------- repeat chart
+(function () {
+  const rows = [["Gap vs own level", "rise"], ["Share of good pressure innings", "share"], ["Pressure output", "output"], ["Usual level", "normal"]];
+  const W = 460, rh = 44, L = 180, H = rows.length * rh + 26, X = v => L + (W - L - 34) * v / 0.4;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Split-half repeatability by measure">`, i = 0;
+  for (const t of [0, .1, .2, .3, .4]) s += `<line class="ax" x1="${X(t)}" x2="${X(t)}" y1="0" y2="${H - 20}"/><text x="${X(t)}" y="${H - 6}" text-anchor="middle">${t.toFixed(1)}</text>`;
+  rows.forEach(([lab, k], j) => {
+    const y = j * rh + 8, hi = k === "output";
+    s += `<text x="0" y="${y + 19}" style="fill:var(--ink);font-family:var(--body);font-size:12.5px;font-weight:${hi ? 600 : 400}">${lab}</text>`;
+    [["bat", hi ? "var(--accent)" : "var(--ink)", 0], ["bowl", hi ? "color-mix(in srgb, var(--accent) 55%, transparent)" : "var(--muted)", 16]].forEach(([r, c, o]) => {
+      const v = D.roles[r].repeat[k] ?? 0;
+      s += `<rect class="grow" style="--i:${i++}" x="${X(0)}" y="${y + o}" width="${Math.max(1, X(Math.max(v, 0)) - X(0))}" height="13" rx="3" fill="${c}"/><text x="${X(Math.max(v, 0)) + 6}" y="${y + o + 11}">${v.toFixed(2)}</text>`;
+    });
+  });
+  $("#repeat").innerHTML = s + "</svg>";
+})();
+
+// ---------- what-if lab
+function rateAll(role, kc, gate) {
+  const ps = D.roles[role].players, cut = Math.ceil(gate * ps.length);
+  const rows = ps.map(p => ({...p, E: (100 * p.p_rv + kc * p.normal) / (p.p_wb + kc), pass: gate >= 1 || p.A_rank <= cut}));
+  rows.sort((a, b) => (b.pass - a.pass) || (b.E - a.E));
+  rows.forEach((r, i) => r.nr = i + 1);
+  return {rows, cut};
+}
+function setSeg(el, attr, val) {
+  const bs = [...el.querySelectorAll("button")];
+  bs.forEach((b, i) => { const on = b.dataset[attr] === val; b.setAttribute("aria-pressed", on); if (on) el.style.setProperty("--k", i); });
+}
+function fill(r) { r.style.setProperty("--p", (100 * (r.value - r.min) / (r.max - r.min)) + "%"); }
+function presets() {
+  const r = state.role, seen = new Set();
+  $("#kc-p").innerHTML = [[D.kc_used[r], "submitted"], [D.kc_forecast[r], "forecast pick"], [0, "pressure only"], [3000, "mostly usual form"]]
+    .filter(([k]) => !seen.has(k) && seen.add(k)).map(([k, l]) => `<button data-kc="${k}">${k} · ${l}</button>`).join("");
+  $("#gate-p").innerHTML = [[0.2, "submitted 20%"], [0.15, "15%"], [0.3, "30%"], [1, "no gate"]].map(([g, l]) => `<button data-gate="${g}">${l}</button>`).join("");
+}
+$("#kc-p").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { state.kc[state.role] = +b.dataset.kc; lab(); } });
+$("#gate-p").addEventListener("click", e => { const b = e.target.closest("button"); if (b) { state.gate[state.role] = +b.dataset.gate; lab(); } });
+$("#kc").addEventListener("input", e => { state.kc[state.role] = +e.target.value; lab(); });
+$("#gate").addEventListener("input", e => { state.gate[state.role] = +e.target.value; lab(); });
+$("#role-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; state.role = b.dataset.role; setSeg($("#role-seg"), "role", state.role); presets(); buildScatter(); lab(); });
+$("#y-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; state.y = b.dataset.y; setSeg($("#y-seg"), "y", state.y); buildScatter(); lab(); });
+
+function lab() {
+  const r = state.role, kc = state.kc[r], gate = state.gate[r];
+  const ks = $("#kc"), gs = $("#gate"); ks.value = kc; gs.value = gate; fill(ks); fill(gs);
+  $("#kc-o").textContent = kc; $("#gate-o").textContent = gate >= 1 ? "none" : Math.round(gate * 100) + "%";
+  document.querySelectorAll("#kc-p button").forEach(b => b.classList.toggle("on", +b.dataset.kc === kc));
+  document.querySelectorAll("#gate-p button").forEach(b => b.classList.toggle("on", +b.dataset.gate === gate));
+  const {rows, cut} = rateAll(r, kc, gate);
+  const top = rows.slice(0, 10), sub = new Map(TOP(r).map(p => [p.name, p.rank]));
+  const kept = top.filter(p => sub.has(p.name)).length;
+  $("#kept").innerHTML = `${kept}/10<small>stay in the top 10</small>`;
+  $("#segs").innerHTML || ($("#segs").innerHTML = Array.from({length: 10}, (_, i) => `<i style="--i:${i}"></i>`).join(""));
+  [...$("#segs").children].forEach((s, i) => s.classList.toggle("on", i < kept));
+  renderWi(top, sub);
+  updateScatter(rows, cut, gate, new Set(top.map(p => p.name)));
+}
+function renderWi(top, sub) {
+  const box = $("#wi"), first = new Map(), old = new Map();
+  for (const el of box.children) { first.set(el.dataset.k, el.getBoundingClientRect().top); old.set(el.dataset.k, el); }
+  const els = top.map(p => {
+    const el = old.get(p.name) || Object.assign(document.createElement("div"), {});
+    el.dataset.k = p.name; el.dataset.name = p.name; el.dataset.role = state.role;
+    const s = sub.get(p.name), d = s ? s - p.nr : null;
+    el.className = s ? "" : "new";
+    el.innerHTML = `<span class="nr">${p.nr}</span><span>${esc(p.name)}${s ? "" : ` <small class="muted">new</small>`}</span>
+      <span class="mono" style="text-align:right">${f1(p.E)}</span><span class="mv ${d > 0 ? "up" : d < 0 ? "dn" : ""}">${s ? (d === 0 ? "=" : d > 0 ? "▲" + d : "▼" + -d) : ""}</span>`;
+    return el;
+  });
+  box.replaceChildren(...els);
+  if (RM) return;
+  for (const el of els) {
+    const f = first.get(el.dataset.k), l = el.getBoundingClientRect().top;
+    if (f == null) el.animate([{opacity: 0, transform: "translateX(-14px)"}, {opacity: 1, transform: "none"}], {duration: 380, easing: "cubic-bezier(.2,.8,.2,1)"});
+    else if (Math.abs(f - l) > 1) el.animate([{transform: `translateY(${f - l}px)`}, {transform: "none"}], {duration: 480, easing: "cubic-bezier(.2,.8,.2,1)"});
+  }
+}
+
+// scatter: points persist, so changes glide instead of redrawing
+const SC = {W: 660, H: 410, L: 48, B: 40, T: 14, R: 18};
+let SX, SY;
+function eAt(p, k) { return (100 * p.p_rv + k * p.normal) / (p.p_wb + k); }
+function buildScatter() {
+  const r = state.role, ps = D.roles[r].players, {W, H, L, B, T, R} = SC;
+  const xs = ps.map(p => p.normal);
+  const ys = state.y === "A" ? ps.map(p => p.A) : ps.flatMap(p => [0, 100, 300, 1000, 3000].map(k => eAt(p, k)));
+  const x0 = Math.floor(Math.min(...xs) / 10) * 10, x1 = Math.ceil(Math.max(...xs) / 10) * 10;
+  const ys0 = Math.min(...ys), ys1 = Math.max(...ys), st = (ys1 - ys0) > 60 ? 10 : 5;
+  const y0 = Math.floor(ys0 / st) * st, y1 = Math.ceil(ys1 / st) * st;
+  SX = v => L + (W - L - R) * (v - x0) / (x1 - x0); SY = v => T + (H - T - B) * (1 - (v - y0) / (y1 - y0));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Every eligible ${ROLE[r].toLowerCase().slice(0, -1)}: usual level across, ${state.y === "A" ? "pressure output" : "rating"} up"><g>`;
+  for (let t = x0; t <= x1; t += 10) s += `<line class="ax" x1="${SX(t)}" x2="${SX(t)}" y1="${T}" y2="${H - B}" stroke-opacity="${t === 0 ? 1 : .5}"/><text x="${SX(t)}" y="${H - B + 16}" text-anchor="middle">${t}</text>`;
+  for (let t = y0; t <= y1; t += st) s += `<line class="ax" x1="${L}" x2="${W - R}" y1="${SY(t)}" y2="${SY(t)}" stroke-opacity="${t === 0 ? 1 : .5}"/><text x="${L - 6}" y="${SY(t) + 4}" text-anchor="end">${t}</text>`;
+  s += `<text x="${(L + W - R) / 2}" y="${H - 4}" text-anchor="middle">usual level: runs ${r === "bat" ? "added" : "saved"} per 100 normal balls →</text>`;
+  s += `<text x="12" y="${(T + H - B) / 2}" text-anchor="middle" transform="rotate(-90 12 ${(T + H - B) / 2})">${state.y === "A" ? "pressure output" : "rating"} →</text></g>`;
+  s += `<g class="gate" id="gl"><line x1="${L}" x2="${W - R}" y1="0" y2="0" stroke="var(--accent)" stroke-dasharray="6 5" stroke-width="1.5"/><text id="gl-t" x="${W - R - 4}" y="-6" text-anchor="end" style="fill:var(--accent);paint-order:stroke;stroke:var(--surface);stroke-width:3px"></text></g><g id="pts">`;
+  for (const p of ps) {
+    const rr = (3 + Math.sqrt(p.p_wb) / 5).toFixed(1);
+    s += `<g class="pt" tabindex="0" role="button" aria-label="${esc(p.name)}" data-role="${r}" data-name="${esc(p.name)}" style="transform:translate(${SX(p.normal)}px,${SY(state.y === "A" ? p.A : eAt(p, state.kc[r]))}px)">
+      <line class="lead" x1="0" y1="0" x2="0" y2="0"/><circle r="${rr}"/><text x="${+rr + 4}" y="4">${esc(p.name.split(" ").slice(-1)[0])}</text></g>`;
+  }
+  $("#scatter").innerHTML = s + "</g></svg>";
+  if (!RM) $("#scatter svg").animate([{opacity: .2}, {opacity: 1}], {duration: 350});
+}
+function updateScatter(rows, cut, gate, topset) {
+  const by = new Map(rows.map(p => [p.name, p])), pts = $("#pts");
+  const lifted = [];
+  for (const g of pts.children) {
+    const p = by.get(g.dataset.name); if (!p) continue;
+    g.style.transform = `translate(${SX(p.normal)}px,${SY(state.y === "A" ? p.A : p.E)}px)`;
+    g.classList.toggle("top", topset.has(p.name)); g.classList.toggle("pass", p.pass && !topset.has(p.name));
+    g.dataset.tip = `${p.nr}|${sg(p.A)}|${sg(p.normal)}|${f1(p.E)}`;
+    if (topset.has(p.name)) lifted.push(g);
+  }
+  lifted.forEach(g => { if (g !== pts.lastElementChild) pts.appendChild(g); });
+  // nudge the top-10 name labels so none overlap (12px rows), flipping to the left near the right edge
+  const placed = [];
+  const lp = lifted.map(g => { const p = by.get(g.dataset.name); return {g, x: SX(p.normal), y: SY(state.y === "A" ? p.A : p.E), r: +g.querySelector("circle").getAttribute("r")}; });
+  // every visible dot is an obstacle too, so a name never sits under another player's dot
+  const dots = [...pts.children].map(g => { const p = by.get(g.dataset.name); if (!p) return null;
+    const r = +g.querySelector("circle").getAttribute("r"), x = SX(p.normal), y = SY(state.y === "A" ? p.A : p.E); return {x0: x - r - 2, x1: x + r + 2, y, h: r + 6}; }).filter(Boolean);
+  const crowded = [];
+  lp.sort((a, b) => a.y - b.y).forEach(o => {
+      const t = o.g.querySelector("text"), w = (t.getComputedTextLength ? t.getComputedTextLength() : 0) + 4 || 7 * t.textContent.length, rightFirst = o.x + w + 14 <= SC.W - SC.R;
+      const X0 = lf => lf ? o.x - w - o.r - 4 : o.x + o.r + 4;
+      const hit = (dy, x0) => x0 < SC.L || x0 + w > SC.W - SC.R + 4 || placed.some(q => Math.abs(q.y - (o.y + dy)) < 12 && x0 < q.x1 && x0 + w > q.x0) ||
+        dots.some(q => Math.abs(q.y - (o.y + dy - 4)) < q.h && x0 < q.x1 && x0 + w > q.x0 && !(Math.abs(q.x0 + q.x1 - 2 * o.x) < 1 && Math.abs(q.y - o.y) < 1));
+      // try the near side then the far side, stepping up and down; a nudged name gets a leader line
+      let left = !rightFirst, dy = null;
+      for (const lf of [!rightFirst, rightFirst]) { const d = [4, -8, 16, -20, 28, -32, 40, -44].find(d => !hit(d, X0(lf))); if (d != null) { left = lf; dy = d; break; } }
+      if (dy == null) {   // no clean slot: take the one that clears other names and covers the fewest dots
+        let best = Infinity;
+        for (const lf of [!rightFirst, rightFirst]) for (const d of [4, -8, 16, -20, 28, -32, 40, -44]) { const a = X0(lf);
+          if (a < SC.L || a + w > SC.W - SC.R + 4 || placed.some(q => Math.abs(q.y - (o.y + d)) < 12 && a < q.x1 && a + w > q.x0)) continue;
+          const n = dots.filter(q => Math.abs(q.y - (o.y + d - 4)) < q.h && a < q.x1 && a + w > q.x0).length + Math.abs(d) / 100;
+          if (n < best) { best = n; left = lf; dy = d; } }
+        if (dy == null) dy = 4;
+      }
+      const x0 = X0(left);
+      placed.push({x0, x1: x0 + w, y: o.y + dy});
+      if (dots.some(q => Math.abs(q.y - (o.y + dy - 4)) < q.h && x0 < q.x1 && x0 + w > q.x0)) crowded.push(o.g);
+      t.setAttribute("y", dy); t.setAttribute("text-anchor", left ? "end" : "start");
+      t.setAttribute("x", left ? -(o.r + 4) : o.r + 4);
+      // a nudged name gets a short leader line back to its own dot
+      const ld = o.g.querySelector(".lead"), far = Math.abs(dy - 4) > 1;
+      ld.setAttribute("x1", 0); ld.setAttribute("y1", 0); ld.setAttribute("x2", far ? (left ? -(o.r + 2) : o.r + 2) : 0); ld.setAttribute("y2", far ? dy - 4 : 0);
+    });
+  crowded.forEach(g => pts.appendChild(g));   // a name that has to sit over a dot is drawn on top, its halo keeps it readable
+  const gl = $("#gl");
+  if (state.y === "A" && gate < 1) {
+    const srt = rows.map(p => p.A).sort((a, b) => b - a), v = (srt[cut - 1] + (srt[cut] ?? srt[cut - 1])) / 2;
+    gl.style.opacity = 1; gl.style.transform = `translateY(${SY(v)}px)`;
+    // put the gate label where no dot sits near the line: try the right end, then further in, then the left end
+    const gt = $("#gl-t"), lw = 96, gy = SY(v) - 10;
+    gt.textContent = `gate: top ${Math.round(gate * 100)}%`;
+    const busy = x1 => dots.some(q => q.x1 > x1 - lw && q.x0 < x1 && Math.abs(q.y - gy) < q.h + 6);
+    const ends = [SC.W - SC.R - 4, SC.L + (SC.W - SC.L - SC.R) * .78, SC.L + (SC.W - SC.L - SC.R) * .58, SC.L + lw + 6];
+    gt.setAttribute("x", ends.find(x => !busy(x)) ?? ends[0]);
+  } else gl.style.opacity = 0;
+}
+(function tooltips() {
+  const wrap = $("#sc-wrap"), tip = $("#tip");
+  const show = g => { const [nr, a, n, e] = (g.dataset.tip || "").split("|"), br = g.getBoundingClientRect(), wr = wrap.getBoundingClientRect();
+    tip.innerHTML = `<b>${esc(g.dataset.name)}</b>rank ${nr} · pressure ${a} · usual ${n} · rating ${e}`;
+    tip.style.left = Math.min(Math.max(br.left + br.width / 2 - wr.left, 90), wr.width - 90) + "px"; tip.style.top = (br.top - wr.top) + "px"; tip.classList.add("on"); };
+  wrap.addEventListener("pointerover", e => { const g = e.target.closest(".pt"); if (g) show(g); });
+  wrap.addEventListener("pointerout", e => { if (e.target.closest(".pt")) tip.classList.remove("on"); });
+  wrap.addEventListener("focusin", e => { const g = e.target.closest(".pt"); if (g) show(g); });
+  wrap.addEventListener("focusout", () => tip.classList.remove("on"));
+  wrap.addEventListener("keydown", e => { const g = e.target.closest(".pt"); if (g && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openCard(g.dataset.role, g.dataset.name); } });
+})();
+
+// ---------- KC curve
+(function () {
+  const W = 560, H = 240, L = 40, B = 32, T = 14, R = 16;
+  const all = ["bat", "bowl"].flatMap(r => D.roles[r].kc_curve.map(p => p.gain));
+  const y0 = Math.floor(Math.max(-12, Math.min(...all)) / 2) * 2, y1 = Math.ceil(Math.max(...all, D.roles.bowl.kc_normal_only) / 2) * 2 + 1;
+  const kx = k => L + (W - L - R) * (Math.log10(k + 50) - Math.log10(50)) / (Math.log10(2050) - Math.log10(50));
+  const Y = v => T + (H - T - B) * (1 - (Math.max(v, y0) - y0) / (y1 - y0));
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Forecast gain by KC for batters and bowlers">`;
+  for (let t = y0; t <= y1; t += 2) s += `<line class="ax" x1="${L}" x2="${W - R}" y1="${Y(t)}" y2="${Y(t)}" stroke-opacity="${t === 0 ? 1 : .45}"/><text x="${L - 6}" y="${Y(t) + 4}" text-anchor="end">${t}</text>`;
+  for (const k of [0, 100, 300, 1000, 2000]) s += `<text x="${kx(k)}" y="${H - B + 16}" text-anchor="middle">${k}</text>`;
+  s += `<text x="${W - R}" y="${H - 2}" text-anchor="end">KC (log scale)</text>`;
+  [["bat", "var(--accent)"], ["bowl", "var(--normal)"]].forEach(([r, c]) => {
+    const pts = D.roles[r].kc_curve, P = pts.map(p => [kx(p.k), Y(p.gain)]);
+    let len = 0; for (let i = 1; i < P.length; i++) len += Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1]);
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(D.roles[r].kc_normal_only)}" y2="${Y(D.roles[r].kc_normal_only)}" stroke="${c}" stroke-dasharray="4 4" stroke-opacity=".6"/>`;
+    s += `<polyline class="draw" style="--len:${len.toFixed(0)}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linejoin="round" points="${P.map(p => p.join(",")).join(" ")}"/>`;
+    const u = pts.find(p => p.k === D.kc_used[r]), fc = pts.find(p => p.k === D.kc_forecast[r]);
+    if (fc && fc.k !== D.kc_used[r]) s += `<circle cx="${kx(fc.k)}" cy="${Y(fc.gain)}" r="5" fill="var(--surface)" stroke="${c}" stroke-width="2"/><text x="${kx(fc.k) - 8}" y="${Y(fc.gain) - 10}" text-anchor="end">forecast pick</text>`;
+    if (u) s += `<circle cx="${kx(u.k)}" cy="${Y(u.gain)}" r="6" fill="${c}"/><text x="${kx(u.k) + 9}" y="${Y(u.gain) + (r === "bat" ? -9 : 17)}" style="fill:${c}">${ROLE[r].toLowerCase()} · used ${u.k}</text>`;
+  });
+  $("#kcc").innerHTML = s + "</svg>";
+  const b = D.roles.bowl.kc_curve, u = b.find(p => p.k === D.kc_used.bowl), fc = b.find(p => p.k === D.kc_forecast.bowl);
+  const sb = D.roles.bowl.sens.find(s => s.variant.startsWith("forecast-best"));
+  const bw = TOP("bowl"), lo = Math.min(...bw.map(p => p.p_wb)), hi = Math.max(...bw.map(p => p.p_wb)), pct = (k, x) => Math.round(100 * x / (x + k));
+  $("#kcb").textContent = D.kc_used.bowl;
+  $("#kc-why").innerHTML = (u && fc) ? `The forecast test alone would set KC = ${fc.k} for bowlers. Pressure spells would then be only
+    ${pct(fc.k, lo)}-${pct(fc.k, hi)}% of each bowler's rating, and the list would rank the best bowlers overall.
+    With KC = ${u.k}, close to the batting value, pressure is ${pct(u.k, lo)}-${pct(u.k, hi)}% of every rating in both lists.
+    That costs ${(fc.gain - u.gain).toFixed(1)} points of forecast accuracy and still beats a league-average guess.
+    ${sb ? `With KC = ${fc.k} the same <b>${sb.overlap_with_base_top10} of 10</b> bowlers are picked; only the order moves.` : ""}
+    <br><br><button class="x" id="try-fc">Show it in the lab</button>` : "";
+  const t = $("#try-fc"); if (t) t.onclick = () => { state.role = "bowl"; setSeg($("#role-seg"), "role", "bowl"); presets(); buildScatter();
+    state.kc.bowl = D.kc_forecast.bowl; lab(); $("#lab").scrollIntoView({behavior: RM ? "auto" : "smooth"}); };
+})();
+
+// ---------- pressure line + heat
+(function () {
+  $("#cut").innerHTML = `<thead><tr><th>PI line</th><th>% balls</th><th>% win swing</th><th>Bat repeat r</th><th>Bowl repeat r</th><th>Bat kept</th><th>Bowl kept</th></tr></thead><tbody>` +
+    D.cut.map(r => `<tr class="${r.cut === 1.5 ? "hi" : ""}"><td class="n">${r.cut}</td><td class="n">${f1(r["share_of_balls_%"])}</td><td class="n">${f1(r["share_of_win_swing_%"])}</td>
+      <td class="n">${(+r.bat_repeat_r_pressure_output).toFixed(2)}</td><td class="n">${(+r.bowl_repeat_r_pressure_output).toFixed(2)}</td>
+      <td class="n">${r.bat_top10_kept}</td><td class="n">${r.bowl_top10_kept}</td></tr>`).join("") + "</tbody>";
+  const ph = D.phase, mx = Math.max(...ph.vals.flat()); let h = `<div></div>` + ph.cols.map(c => `<div class="lb" style="text-align:center">${c}</div>`).join(""), i = 0;
+  ph.innings.forEach((inn, j) => { h += `<div class="lb">${inn === 1 ? "1st innings" : "Chase"}</div>` + ph.vals[j].map(v =>
+    `<div class="cell num" style="--i:${i++};background:color-mix(in srgb, var(--accent) ${Math.round(88 * v / mx)}%, var(--soft));color:${v / mx > .55 ? "#fff" : "var(--ink)"}">${f1(v)}%</div>`).join(""); });
+  $("#heat").innerHTML = h;
+})();
+
+// ---------- robustness
+(function () {
+  const bowl = Object.fromEntries(D.roles.bowl.sens.map(s => [s.variant, s.overlap_with_base_top10]));
+  const m = v => v == null ? `<span class="mini">–</span>` : `<span class="mini"><span class="bar"><i style="--w:${v / 10};background:${v >= 8 ? "var(--accent)" : "var(--muted)"}"></i></span>${v}/10</span>`;
+  // the 7 changes that move the lists most stay visible; the rest sit in a drawer
+  const rows = D.roles.bat.sens.map(s => ({v: s.variant, b: s.overlap_with_base_top10, w: bowl[s.variant]}))
+    .sort((x, y) => Math.min(x.b ?? 10, x.w ?? 10) + (x.b ?? 10) + (x.w ?? 10) - (Math.min(y.b ?? 10, y.w ?? 10) + (y.b ?? 10) + (y.w ?? 10)));
+  const row = r => `<div><span>${esc(String(r.v).replace(/^PI>=/, "pressure line at "))}</span>${m(r.b)}${m(r.w)}</div>`, head = `<div class="h"><span>Change</span><span>Batters kept</span><span>Bowlers kept</span></div>`;
+  $("#sens").innerHTML = head + rows.slice(0, 7).map(row).join("");
+  $("#sens-more").innerHTML = head + rows.slice(7).map(row).join("");
+  const f = [...D.roles.bat.forward.map(r => ({...r, role: "Batters"})), ...D.roles.bowl.forward.map(r => ({...r, role: "Bowlers"}))];
+  const K = "forecast (built on earlier seasons only)";
+  $("#fwd").innerHTML = `<thead><tr><th>Role</th><th>Forecast from</th><th>Rank r</th><th>p</th></tr></thead><tbody>` +
+    f.map(r => `<tr class="${r[K] === "final rating" ? "hi" : ""}"><td>${r.role}</td><td>${esc(r[K])}</td><td class="n">${(+r.mean_spearman_over_3_origins).toFixed(2)}</td><td class="n">${(+r.permutation_p).toFixed(3)}</td></tr>`).join("") + "</tbody>";
+})();
+
+// ---------- tested against the alternatives
+(function () {
+  const A = D.alt;
+  const bar = (v, col) => `<span class="mini"><span class="bar"><i style="--w:${v / 100};background:${col}"></i></span>${(+v).toFixed(0)}%</span>`;
+  $("#decides").innerHTML = `<div class="h"><span>Side does better on…</span><span>Wins match</span><span>Matches</span></div>` +
+    A.decides.map((d, i) => `<div><span>${esc(d["balls used"])}</span>${bar(d["winner_predicted_%"], i === 0 ? "var(--accent)" : "var(--normal)")}<span class="mini">${d.matches}</span></div>`).join("");
+  const rr = Object.fromEntries(A.rise.map(r => [r.role, r]));
+  $("#rise").innerHTML = `<thead><tr><th></th><th>Rise</th><th>Dip</th><th>By luck, each way</th><th>Real share</th></tr></thead><tbody>` +
+    ["bat", "bowl"].map(r => `<tr><td>${ROLE[r]}</td><td class="n">${rr[r].clear_risers}</td><td class="n">${rr[r].clear_dippers}</td><td class="n">~${Math.round(rr[r].expected_each_side_by_luck)}</td><td class="n">${Math.round(rr[r]["share_of_spread_real_%"])}%</td></tr>`).join("") + "</tbody>";
+  const tops = r => new Set(TOP(r).map(p => p.name));
+  const nm = (r, s) => String(s || "").split(", ").filter(Boolean).map(n => tops(r).has(n) ? `<b>${esc(n)}</b>` : esc(n)).join(", ");
+  $("#rise-names").innerHTML = ["bat", "bowl"].map(r => `<p><b>${ROLE[r]}.</b> Rise: ${nm(r, rr[r].risers_names)}. Dip: ${nm(r, rr[r].dippers_names)}.</p>`).join("") +
+    `<p class="muted">Bold = in our top 10. No top-10 pick clearly dips. For batters rising is partly real; for bowlers luck explains it all, which is why the lists rank pressure output rather than the rise.</p>`;
+  const ns = Object.fromEntries(A.naive_sum.map(r => [r.role, r]));
+  $("#naive-h").textContent = `Rank death-overs strike rate or economy (overs 16-20, 150+ balls) and the list shares ${ns.bat.overlap_top10} batter and ${ns.bowl.overlap_top10} bowlers with ours. ${Math.round(ns.bat["league_death_balls_decided_%"])}% of death-overs balls come when the result is all but settled, and ${Math.round(ns.bat["league_pressure_before_death_%"])}% of pressure balls come before the 16th over.`;
+  const nv = r => {
+    const d = A.naive[r].filter(x => x.list === "death overs");
+    $("#naive").innerHTML = `<thead><tr><th>#</th><th>Death-overs pick</th><th>${r === "bat" ? "SR" : "Econ"}</th><th>Why not in our top 10</th></tr></thead><tbody>` +
+      d.map(x => `<tr class="${x.why.startsWith("in both") ? "hi" : ""}"><td class="n">${x.rank}</td><td>${esc(x.name)}</td><td class="n">${(+x.death_stat).toFixed(r === "bat" ? 1 : 2)}</td><td class="small">${esc(x.why)}</td></tr>`).join("") + "</tbody>";
+  };
+  nv("bat");
+  $("#nv-seg").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; setSeg($("#nv-seg"), "r", b.dataset.r); nv(b.dataset.r); });
+  const bt = {}; A.backtest.forEach(x => { (bt[x.method] ||= {})[x.role] = x; });
+  const order = ["ours", "pressure output only", "usual form only", "biggest risers (pressure minus usual)", "death overs (no win model)", "random 10 from the pool (average)"];
+  const cell = x => x ? `${x.test_rv_per100 > 0 ? "+" : ""}${(+x.test_rv_per100).toFixed(1)}${x["beats_%_of_random_sets"] != null ? ` <span class="muted">(${Math.round(x["beats_%_of_random_sets"])}%)</span>` : ""}` : "–";
+  $("#bt").innerHTML = `<thead><tr><th>Picked by</th><th>Batters</th><th>Bowlers</th></tr></thead><tbody>` +
+    order.map(m => `<tr class="${m === "ours" ? "hi" : ""}"><td>${m === "ours" ? "Our method" : esc(m)}</td><td class="n">${cell(bt[m]?.bat)}</td><td class="n">${cell(bt[m]?.bowl)}</td></tr>`).join("") + "</tbody>";
+  const sd = bt["random 10 from the pool (average)"];
+  $("#bt-note").textContent = `Our method, pressure-only and usual-form are within a random 10's noise (about ${Math.round(sd.bat.random_sd)} runs) of each other: a tie. Picking the biggest risers, and batters on death-overs strike rate, clearly fall behind. In brackets: share of 2,000 random sets of 10 beaten.`;
+})();
+
+// ---------- limitations
+(function () {
+  const li = [];
+  for (const r of ["bat", "bowl"]) {
+    const nt = TOP(r).filter(p => p.band === "near-tie").map(p => p.name);
+    if (nt.length) li.push(`<b>${ROLE[r]}, near-ties</b> (top 10 in under half of resamples): ${nt.map(esc).join(", ")}. The rating decides the order inside these close groups.`);
+    const miss = D.roles[r].players.filter(p => !p.passes_gate).sort((a, b) => b.normal - a.normal).slice(0, 4);
+    li.push(`<b>${ROLE[r]} who are excellent in general but miss the pressure gate:</b> ${miss.map(p => `${esc(p.name)} (${ord(p.A_rank)} under pressure)`).join(", ")}.`);
+  }
+  const fb = D.roles.bowl.forward.find(r => r["forecast (built on earlier seasons only)"] === "final rating");
+  if (fb) li.push(`The bowling rating does not reach significance in the next-season forecast (r = ${(+fb.mean_spearman_over_3_origins).toFixed(2)}, p = ${(+fb.permutation_p).toFixed(2)}). Bowling pressure samples are a few hundred balls per player.`);
+  li.push(`If only chases could produce pressure (the first-innings win model is the weaker one), ${D.alt.chase_only.bat} of 10 batters and ${D.alt.chase_only.bowl} of 10 bowlers stay.`);
+  li.push("First-innings win chances are less certain than chase win chances (AUC 0.69 vs 0.90). Wide and bye runs are estimated on average. Field settings, pitch and ball-tracking data are not in the files.");
+  $("#lim").innerHTML = li.map(x => `<li>${x}</li>`).join("");
+})();
+
+// ---------- player card
+let cur = null;
+function openCard(role, name) {
+  const p = D.roles[role].players.find(q => q.name === name); if (!p) return;
+  cur = {role, name};
+  const d = D.roles[role].detail[name], v = d && d.pvn, bat = role === "bat", top = TOP(role), idx = top.findIndex(q => q.name === name);
+  let i = 0; const pr = (a, b) => `<div class="pair" style="--i:${i++}"><span>${a}</span><b>${b}</b></div>`;
+  const CW = Math.round(Math.max(300, Math.min(696, innerWidth - 44)));   // charts drawn at real width so text stays >= 11px
+  const pool = D.roles[role].pool;
+  let h = `<div class="dlg-h"><div><div class="eyebrow">${bat ? "Batter" : "Bowler"} · ${p.passes_gate ? "inside the pressure gate" : "outside the pressure gate"}</div>
+    <h2 id="d-name" tabindex="-1">${esc(name)}</h2></div>
+    <div class="dlg-nav">${idx >= 0 ? `<button class="x" id="d-prev" ${idx === 0 ? "disabled" : ""} aria-label="Previous pick">←</button><button class="x" id="d-next" ${idx === top.length - 1 ? "disabled" : ""} aria-label="Next pick">→</button>` : ""}<button class="x" id="d-x">Close</button></div></div>`;
+  h += `<div class="pc-hero"><b class="pc-rk">${p.rank <= 10 ? "#" + p.rank : ord(p.rank)}</b><div><b class="pc-sc">${f1(p.score)}</b>
+    <span>rating · ${p.rank <= 10 ? `${p.band}, top 10 in ${Math.round(100 * p.p_top10)}% of resamples` : p.passes_gate ? "inside the gate, just outside the ten" : `outside the gate: needs top 20% under pressure`}</span></div></div>`;
+  h += `<div class="strip">
+    <div><b class="p">${sg(p.A)}</b><span>pressure output, ${ord(p.A_rank)} of ${pool}</span></div>
+    <div><b>${sg(p.normal)}</b><span>usual level</span></div>
+    <div><b>${Math.round(p.p_balls)}</b><span>pressure balls</span></div>
+    <div><b>${p.rank_p10}-${Math.round(p.rank_p90)}</b><span>rank range in resamples</span></div></div>`;
+  if (v) {
+    const lo = Math.min(v.pressure_rv_lo, v.normal_rv_lo, 0), hi = Math.max(v.pressure_rv_hi, v.normal_rv_hi, 0), W = CW, L = 70, R = 24;
+    const X = x => L + (W - L - R) * (x - lo) / (hi - lo);
+    let s = `<svg viewBox="0 0 ${W} 96" role="img" aria-label="Runs per 100 balls with 90% ranges"><line x1="${X(0)}" x2="${X(0)}" y1="4" y2="78" stroke="var(--muted)" stroke-dasharray="3 3"/><text x="${X(0)}" y="91" text-anchor="middle"><tspan style="fill:var(--ink);font-weight:500">0</tspan> = average player</text>`;
+    [["Pressure", v.pressure_rv_per100, v.pressure_rv_lo, v.pressure_rv_hi, "var(--accent)", 22, 0], ["Usual", v.normal_rv_per100, v.normal_rv_lo, v.normal_rv_hi, "var(--normal)", 56, 1]].forEach(([l, m, a, b, c, y, k]) => {
+      s += `<text x="0" y="${y + 4}" style="fill:var(--ink);font-family:var(--body);font-size:12.5px">${l}</text><rect class="grow" style="--i:${k * 2}" x="${X(a)}" y="${y - 3}" width="${X(b) - X(a)}" height="6" rx="3" fill="${c}" fill-opacity=".35"/>
+        <circle cx="${X(m)}" cy="${y}" r="7" fill="${c}"/><text x="${X(m)}" y="${y - 11}" text-anchor="middle" style="fill:${c};font-weight:500">${sg(m)}</text>`;
+    });
+    h += `<div><div class="lbl">Runs ${bat ? "added" : "saved"} per 100 balls vs an average player, 90% range</div>${s}</svg></div>`;
+  }
+  if (d && Object.keys(d.seasons).length) {
+    const ss = Object.entries(d.seasons), mx = Math.max(10, ...ss.map(([, x]) => Math.abs(x ?? 0))), W = CW, H = 110, M = H / 2, bw = W / ss.length;
+    let s = `<svg viewBox="0 0 ${W} ${H + 18}" role="img" aria-label="Pressure run value by season"><line class="ax" x1="0" x2="${W}" y1="${M}" y2="${M}"/>`;
+    ss.forEach(([y, x], k) => { const cx = k * bw + bw / 2;
+      if (x != null) { const hgt = (M - 14) * Math.abs(x) / mx; s += `<rect x="${cx - bw * .28}" y="${x >= 0 ? M - hgt : M}" width="${bw * .56}" height="${Math.max(hgt, 1)}" rx="2" ${x >= 0 ? `fill="var(--accent)"` : `fill="none" stroke="var(--accent)" stroke-width="1.5"`}
+        style="transform-box:fill-box;transform-origin:${x >= 0 ? "bottom" : "top"};${RM ? "" : `animation:sy .6s var(--ease) ${k * 70}ms both`}"/><text x="${cx}" y="${x >= 0 ? M - hgt - 4 : M + hgt + 12}" text-anchor="middle">${sg(x)}</text>`; }
+      else s += `<text x="${cx}" y="${M - 4}" text-anchor="middle">–</text>`;
+      s += `<text x="${cx}" y="${H + 14}" text-anchor="middle" style="fill:var(--ink)">${y}</text>`; });
+    h += `<div><div class="lbl">Season by season, pressure balls (hollow = below average, – = under 10 balls)</div>${s}</svg></div>`;
+  }
+  const more = [];
+  more.push(bat ? pr("Strike rate, pressure / usual", `${f1(p.p_sr)} / ${f1(p.n_sr)}`) + pr("Average, pressure / usual", `${f1(p.p_avg)} / ${f1(p.n_avg)}`)
+               : pr("Economy, pressure / usual", `${(+p.p_econ).toFixed(2)} / ${(+p.n_econ).toFixed(2)}`) + pr("Balls per wicket, pressure / usual", `${f1(p.p_sr)} / ${f1(p.n_sr)}`));
+  if (d && d.split.length) {
+    const g = c => d.split.find(s => s.competition === c && s.situation === "pressure");
+    more.push(["IPL", "T20I"].map(c => { const s = g(c); return pr(`${c} pressure, runs per 100 (balls)`, s ? `${sg(s.rv_per100)} (${s.balls})` : "–"); }).join(""));
+  }
+  let tail = `<div class="pairs">${more.join("")}</div>`;
+  if (d && d.model) tail += `<p class="muted small">Rank under three versions of the win model: ${d.model.rank_models_A ?? "–"}, ${d.model.rank_models_B ?? "–"} and ${d.model.rank_second_16fit ?? "–"}.</p>`;
+  if (!d) tail += `<p class="muted small">Full evidence cards are kept for the 20 picks; these numbers come from the ranking table.</p>`;
+  h += `<details class="more"><summary>Strike rate, splits and model checks</summary><div class="in">${tail}</div></details>`;
+  $("#dlg-c").innerHTML = h;
+  $("#d-x").onclick = () => $("#dlg").close();
+  if ($("#d-prev")) { $("#d-prev").onclick = () => step(-1); $("#d-next").onclick = () => step(1); }
+  const dl = $("#dlg"); if (!dl.open) { if (dl.showModal) dl.showModal(); else dl.setAttribute("open", ""); $("#d-name").focus({preventScroll: true}); }
+  else if (!RM) $("#dlg-c").animate([{opacity: .3, transform: "translateX(10px)"}, {opacity: 1, transform: "none"}], {duration: 260, easing: "ease-out"});
+}
+function step(dir) { if (!cur) return; const t = TOP(cur.role), i = t.findIndex(q => q.name === cur.name); if (i < 0) return;
+  const n = t[i + dir]; if (n) openCard(cur.role, n.name); }
+$("#dlg").addEventListener("click", e => { if (e.target.id === "dlg") e.target.close(); });
+$("#dlg").addEventListener("keydown", e => { if (e.key === "ArrowRight") step(1); if (e.key === "ArrowLeft") step(-1); });
+document.head.insertAdjacentHTML("beforeend", "<style>@keyframes sy{from{transform:scaleY(0)}}</style>");
+
+// ---------- search
+(function () {
+  const q = $("#q"), hits = $("#hits"), all = ["bat", "bowl"].flatMap(r => D.roles[r].players.map(p => ({r, p})));
+  let sel = 0, list = [];
+  const draw = () => { hits.innerHTML = list.map((x, i) => `<button class="${i === sel ? "sel" : ""}" data-i="${i}">${esc(x.p.name)}<small>${x.r === "bat" ? "bat" : "bowl"} · #${x.p.rank}</small></button>`).join("") || `<span class="muted small" style="padding:8px">No eligible player by that name</span>`; };
+  q.addEventListener("input", () => { const t = q.value.trim().toLowerCase(); if (!t) { hits.hidden = true; return; }
+    list = all.filter(x => x.p.name.toLowerCase().includes(t)).sort((a, b) => a.p.rank - b.p.rank).slice(0, 8); sel = 0; draw(); hits.hidden = false; });
+  q.addEventListener("keydown", e => { if (hits.hidden) return;
+    if (e.key === "ArrowDown") { sel = Math.min(sel + 1, list.length - 1); draw(); e.preventDefault(); }
+    if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); draw(); e.preventDefault(); }
+    if (e.key === "Enter" && list[sel]) { openCard(list[sel].r, list[sel].p.name); hits.hidden = true; }
+    if (e.key === "Escape") hits.hidden = true; });
+  hits.addEventListener("click", e => { const b = e.target.closest("button"); if (b) { const x = list[+b.dataset.i]; openCard(x.r, x.p.name); hits.hidden = true; q.value = ""; } });
+  document.addEventListener("click", e => { if (!e.target.closest(".find")) hits.hidden = true; });
+})();
+
+// ---------- phone section picker
+(function () {
+  const cs = $("#cursec"); if (!cs) return;
+  cs.innerHTML = [...document.querySelectorAll("#links a")].map(a => `<option value="${a.getAttribute("href")}">${esc(a.textContent)}</option>`).join("");
+  cs.addEventListener("change", () => document.querySelector(cs.value)?.scrollIntoView({behavior: RM ? "auto" : "smooth"}));
+})();
+// ---------- scroll-spy
+(function () {
+  const links = [...document.querySelectorAll("#links a")], map = new Map(links.map(a => [a.getAttribute("href").slice(1), a]));
+  if (!("IntersectionObserver" in window)) return;
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { links.forEach(a => a.classList.remove("on")); const a = map.get(e.target.id); if (a) { a.classList.add("on"); const cs = $("#cursec"); if (cs) cs.value = a.getAttribute("href"); a.parentElement.scrollTo({left: Math.max(0, a.offsetLeft - 24), behavior: RM ? "auto" : "smooth"}); } } }),
+    {rootMargin: "-40% 0px -55% 0px"});
+  map.forEach((_, id) => { const s = document.getElementById(id); if (s) io.observe(s); });
+})();
+
+setSeg($("#role-seg"), "role", "bat"); setSeg($("#y-seg"), "y", "A");
+presets(); buildScatter(); lab();
+
+// ---------- scroll motion: reveal, progress bar, hero parallax, panel tilt (all off under reduced motion)
+(function () {
+  const bar = $("#prog");
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return; ticking = true;
+    requestAnimationFrame(() => {
+      const max = document.documentElement.scrollHeight - innerHeight;
+      bar.style.setProperty("--p", max > 0 ? Math.min(1, scrollY / max) : 0);
+      if (!RM) { const h = $("header.top h1"), y = Math.min(scrollY, 600);
+        h.style.transform = `translate3d(0, ${y * 0.18}px, 0)`; h.style.opacity = String(1 - y / 900); }
+      ticking = false;
+    });
+  };
+  addEventListener("scroll", onScroll, {passive: true}); onScroll();
+  if (RM || !("IntersectionObserver" in window)) return;
+  document.documentElement.classList.add("anim");
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }),
+    {threshold: 0.12, rootMargin: "0px 0px -6% 0px"});
+  // clip-path hides a target from IntersectionObserver, so watch whole sections and reveal their blocks
+  const sio = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; sio.unobserve(e.target);
+    e.target.querySelectorAll(".rv").forEach(x => x.classList.add("in")); }), {rootMargin: "0px 0px -12% 0px"});
+  document.querySelectorAll(".wrap > section").forEach(sec => {
+    const items = sec.querySelectorAll(":scope > h2, :scope > .sec-h, :scope > .claim > div > h2, :scope > .claim > div > p, .bigs > .big, .lower3 > div, :scope > .ctr > *, :scope > .whyh > *, :scope > .two > .panel, :scope > .lab > .panel, .tiles > .tile, :scope > .stage");
+    items.forEach((el, i) => { el.classList.add("rv"); el.style.setProperty("--d", Math.min(i, 6)); });
+    sio.observe(sec);
+  });
+  document.querySelectorAll(".strip > div").forEach((el, i) => { el.classList.add("rv"); el.style.setProperty("--d", i + 3); });
+  sio.observe($("header.top"));
+  // claim numbers count up once, when they come on screen
+  const cio = new IntersectionObserver(es => es.forEach(e => {
+    if (!e.isIntersecting) return; cio.unobserve(e.target);
+    const c = CU.find(x => x.el === e.target); if (!c) return;
+    const t0 = performance.now(), d = 900;
+    const step = t => { const k = Math.min(1, (t - t0) / d), v = c.v * (1 - Math.pow(1 - k, 4));
+      c.el.textContent = c.pre + v.toFixed(c.dec) + c.suf; if (k < 1) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+  }), {threshold: 0.6});
+  CU.forEach(c => cio.observe(c.el));
+  if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  document.querySelectorAll(".panel").forEach(p => {
+    if (p.closest("#lab") || p.closest("dialog")) return;   // the lab's chart reads pointer positions: keep it flat
+    p.classList.add("tilt");
+    p.addEventListener("pointermove", e => {
+      if (p.classList.contains("rv") && !p.classList.contains("in")) return;
+      const r = p.getBoundingClientRect(), x = (e.clientX - r.left) / r.width - .5, y = (e.clientY - r.top) / r.height - .5;
+      p.classList.add("hov");
+      p.style.transform = `perspective(1100px) rotateX(${(-y * 3).toFixed(2)}deg) rotateY(${(x * 4).toFixed(2)}deg) translateZ(0)`;
+    });
+    p.addEventListener("pointerleave", () => { p.classList.remove("hov"); p.style.transform = ""; });
+  });
+})();
+
+// ---------- 3D pressure landscape (three.js, loaded on demand; the flat grid in "Pressure line" is the fallback)
+(function () {
+  const T = D.terrain, stage = $("#stage");
+  let peak = {v: -1};
+  T.pi.forEach((row, i) => row.forEach((v, j) => { if (v != null && T.n[i][j] >= 30 && v > peak.v) peak = {v, i, j}; }));
+  $("#f-peak").textContent = `${peak.v.toFixed(1)}×`;
+  $("#f-peak-t").textContent = `the swing of an average ball, needing ${T.rows[peak.i]} an over with ${T.cols[peak.j]} overs left`;
+  $("#f-share").textContent = `${T.share_hp}%`;
+  const maxPI = Math.max(...T.pi.flat().filter(v => v != null));
+  $("#f-max").textContent = `${maxPI.toFixed(1)}×`;
+  const gl = (() => { try { const c = document.createElement("canvas"); return !!(c.getContext("webgl2") || c.getContext("webgl")); } catch (e) { return false; } })();
+  let built = false;
+  const fail = () => { if (built) return; stage.classList.add("no3d"); stage.textContent = "The 3D view could not load here. The same grid is shown flat under Pressure line."; };
+  if (!gl) return fail();
+  let started = false;
+  const go = () => { if (started) return; started = true;
+    setTimeout(fail, 9000);   // offline or blocked: say so instead of an empty glow
+    import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js").then(T3 => { if (!stage.classList.contains("no3d")) { built = true; build(T3); } }).catch(fail); };
+  (window.requestIdleCallback || (f => setTimeout(f, 1200)))(go, {timeout: 2500});   // fetch early so the towers are ready on arrival
+  if ("IntersectionObserver" in window) {
+    const io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { go(); io.disconnect(); } }, {rootMargin: "300px"});
+    io.observe(stage);
+  } else go();
+
+  function build(THREE) {
+    const css = n => getComputedStyle(stage).getPropertyValue(n).trim();   // the stage sits in a night band, so read its tokens
+    const renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
+    stage.appendChild(renderer.domElement);
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 200);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444466, 1.1));
+    const sun = new THREE.DirectionalLight(0xffffff, 1.6); sun.position.set(6, 12, 8); scene.add(sun);
+
+    const nr = T.rows.length, nc = T.cols.length, S = 1.18, H = 0.62;
+    const cx = (nc - 1) * S / 2, cz = (nr - 1) * S / 2;
+    const geo = new THREE.BoxGeometry(0.92, 1, 0.92); geo.translate(0, 0.5, 0);
+    const bars = [];
+    T.pi.forEach((row, i) => row.forEach((v, j) => {
+      if (v == null) return;
+      const m = new THREE.MeshStandardMaterial({roughness: 0.55, metalness: 0.05});
+      const b = new THREE.Mesh(geo, m);
+      b.position.set(j * S - cx, 0, i * S - cz);
+      b.userData = {v, i, j, h: Math.max(0.04, v * H)};
+      b.scale.y = RM ? b.userData.h : 0.001;
+      scene.add(b); bars.push(b);
+    }));
+    // translucent plane at the pressure line (PI 1.5) + floor grid
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(nc * S + .4, nr * S + .4),
+      new THREE.MeshBasicMaterial({transparent: true, opacity: 0.16, side: THREE.DoubleSide, depthWrite: false}));
+    plane.rotation.x = -Math.PI / 2; plane.position.y = 1.5 * H; scene.add(plane);
+    const edge = new THREE.LineSegments(new THREE.EdgesGeometry(plane.geometry), new THREE.LineBasicMaterial({transparent: true, opacity: .7}));
+    edge.rotation.copy(plane.rotation); edge.position.copy(plane.position); scene.add(edge);
+    const floor = new THREE.GridHelper(Math.max(nc, nr) * S + 1, Math.max(nc, nr) + 1);
+    floor.material.transparent = true; floor.material.opacity = 0.35; scene.add(floor);
+
+    function paint() {
+      const surf = new THREE.Color(css("--bg")), soft = new THREE.Color(css("--soft")), acc = new THREE.Color(css("--accent")), nor = new THREE.Color(css("--normal"));
+      bars.forEach(b => { const k = Math.pow(Math.min(1, b.userData.v / maxPI), 0.75);
+        b.material.color.copy(b.userData.v < 1.5 ? surf.clone().lerp(nor, 0.72 + 0.23 * k) : surf.clone().lerp(acc, 0.62 + 0.38 * k));
+        b.userData.base = b.material.color.clone(); });
+      plane.material.color.copy(acc); edge.material.color.copy(acc);
+      floor.material.color = new THREE.Color(css("--line"));
+    }
+    paint();
+    matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => setTimeout(paint, 30));
+
+    // HTML axis labels, projected every frame
+    const lab = (txt, cls) => { const d = document.createElement("div"); d.className = "axis3" + (cls ? " " + cls : ""); d.textContent = txt; stage.appendChild(d); return d; };
+    const labels = [];
+    T.cols.forEach((c, j) => labels.push({el: lab(c), p: new THREE.Vector3(j * S - cx, 0, -cz - S * 0.95)}));
+    T.rows.forEach((r, i) => labels.push({el: lab(r), col: i, p: new THREE.Vector3(cx + S * 1.05, 0, i * S - cz)}));
+    labels.push({el: lab("overs left", "t"), p: new THREE.Vector3(0, 0, -cz - S * 1.8)});
+    labels.push({el: lab("required rate", "t"), p: new THREE.Vector3(cx + S * 2.2, 0, 0)});
+    labels.push({el: lab("pressure line", "t"), p: new THREE.Vector3(cx + S * 1.3, 1.5 * H + 0.75, cz + S * 0.4)});
+    labels.push({el: lab(`${peak.v.toFixed(1)}×`, "pk"), p: new THREE.Vector3(peak.j * S - cx, peak.v * H + 0.45, peak.i * S - cz)});
+    const tip = document.createElement("div"); tip.className = "tip3"; stage.appendChild(tip);
+    const hint = document.createElement("div"); hint.className = "hint3"; hint.textContent = matchMedia("(hover: none)").matches ? "drag to turn · tap a tower" : "drag to turn · point at a tower"; stage.appendChild(hint);
+
+    // camera orbit: drag to turn; scroll position tilts the view a little
+    let theta = 2.45, phi = 0.98, vel = RM ? 0 : 0.0016, drag = null, last = 0, hover = null, w = 1, h = 1;
+    const R0 = Math.max(nc, nr) * S * 2.35, target = new THREE.Vector3(0, 0.9, 0);
+    let R = R0;   // pulled back on tall, narrow screens so the whole grid fits
+    let narrow = false;
+    function size() { const r = stage.getBoundingClientRect(); w = r.width; h = r.height; narrow = w < 560; hint.hidden = narrow; renderer.setSize(w, h, false);
+      camera.aspect = w / h; camera.updateProjectionMatrix(); R = R0 * Math.pow(Math.max(1, 1.2 / camera.aspect), narrow ? 0.62 : 0.8);
+      target.y = narrow ? 1.6 : 0.9;   // on phones aim higher so the grid sits lower in the frame, with no empty sky
+      labels.forEach((l, k) => { if (l.col != null) l.el.style.visibility = narrow && l.col % 2 ? "hidden" : ""; }); }
+    new ResizeObserver(() => { size(); if (RM) requestAnimationFrame(frame); }).observe(stage); size();
+    stage.addEventListener("pointerdown", e => { drag = {x: e.clientX, y: e.clientY, t: theta, p: phi}; stage.classList.add("drag"); stage.setPointerCapture(e.pointerId); hint.style.opacity = 0; });
+    const endDrag = e => { const tap = drag && e && Math.hypot(e.clientX - drag.x, e.clientY - drag.y) < 6; drag = null; stage.classList.remove("drag");
+      if (tap) stage.dispatchEvent(new PointerEvent("pointermove", {clientX: e.clientX, clientY: e.clientY})); };
+    stage.addEventListener("pointerup", endDrag); stage.addEventListener("pointercancel", endDrag);
+    const ray = new THREE.Raycaster(), mp = new THREE.Vector2();
+    stage.addEventListener("pointermove", e => {
+      const r = stage.getBoundingClientRect();
+      if (drag) { theta = drag.t - (e.clientX - drag.x) * 0.008; phi = Math.min(1.35, Math.max(0.45, drag.p - (e.clientY - drag.y) * 0.006)); return; }
+      mp.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(mp, camera);
+      const hit = ray.intersectObjects(bars)[0];
+      if (hover && hover !== hit?.object) hover.material.color.copy(hover.userData.base);
+      hover = hit ? hit.object : null;
+      if (hover) { const u = hover.userData; hover.material.color.copy(u.base).offsetHSL(0, 0, 0.12);
+        tip.innerHTML = `Needing <b>${T.rows[u.i]}</b> an over, <b>${T.cols[u.j]}</b> overs left<br>Swing <b class="num">${u.v.toFixed(2)}×</b> an average ball · ${T.n[u.i][u.j].toLocaleString()} balls`;
+        tip.style.left = (e.clientX - r.left) + "px"; tip.style.top = (e.clientY - r.top) + "px"; tip.classList.add("on"); }
+      else tip.classList.remove("on");
+    });
+    stage.addEventListener("pointerleave", () => { tip.classList.remove("on"); if (hover) { hover.material.color.copy(hover.userData.base); hover = null; } });
+
+    // grow-in once, staggered from the back corner; then render only while on screen
+    let t0 = null, visible = true;
+    const ease = k => 1 - Math.pow(1 - k, 3);
+    new IntersectionObserver(es => { visible = es[0].isIntersecting; if (visible) loop(); }).observe(stage);
+    const v3 = new THREE.Vector3();
+    function frame(now) {
+      if (t0 == null) t0 = now;
+      if (!RM) bars.forEach(b => { const u = b.userData, k = Math.min(1, Math.max(0, (now - t0 - (u.i + u.j) * 55) / 900)); b.scale.y = Math.max(0.001, u.h * ease(k)); });
+      if (!drag) theta += vel;
+      const sr = stage.getBoundingClientRect(), sp = Math.min(1, Math.max(0, (innerHeight - sr.top) / (innerHeight + sr.height)));
+      const ph = drag ? phi : phi - (RM ? 0 : (sp - 0.5) * 0.25);
+      camera.position.set(target.x + R * Math.sin(ph) * Math.sin(theta), target.y + R * Math.cos(ph), target.z + R * Math.sin(ph) * Math.cos(theta));
+      camera.lookAt(target);
+      renderer.render(scene, camera);
+      labels.forEach(l => { v3.copy(l.p).project(camera);
+        l.el.style.left = Math.min(w - 26, Math.max(26, (v3.x + 1) / 2 * w)) + "px"; l.el.style.top = Math.min(h - 12, Math.max(10, (1 - v3.y) / 2 * h)) + "px"; l.el.style.opacity = v3.z < 1 && !(narrow && l.el.classList.contains("t")) ? 1 : 0; });
+    }
+    let raf = 0;
+    function loop() { cancelAnimationFrame(raf); const tick = now => { frame(now); if (visible && (!RM || drag)) raf = requestAnimationFrame(tick); }; raf = requestAnimationFrame(tick); }
+    if (RM) { frame(performance.now()); stage.addEventListener("pointermove", () => requestAnimationFrame(frame)); }
+    loop();
+  }
+})();
+
+// small screens: short search hint; wide tables: fade the right edge while more columns sit off-screen
+(function () {
+  const q = $("#q"), fit = () => { q.placeholder = innerWidth < 420 ? "Find" : "Find any player"; };
+  const fade = () => document.querySelectorAll(".scroll").forEach(s => s.classList.toggle("ov", s.scrollWidth > s.clientWidth + 2 && s.scrollLeft + s.clientWidth < s.scrollWidth - 2));
+  fit(); fade();
+  addEventListener("resize", () => { fit(); fade(); });
+  document.addEventListener("toggle", () => setTimeout(fade, 30), true);
+  document.addEventListener("scroll", e => { if (e.target.classList && e.target.classList.contains("scroll")) fade(); }, true);
+  document.addEventListener("click", e => { if (e.target.closest(".seg")) setTimeout(fade, 30); });
+})();
+</script>
+
+</body></html>
